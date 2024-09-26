@@ -186,10 +186,8 @@ modules:
       - /share/doc
     sources:
       - type: archive
-        url: http://files.salome-platform.org/Salome/medfile/med-4.1.1.tar.gz
-        sha256: a082b705d1aafe95d3a231d12c57f0b71df554c253e190acca8d26fc775fb1e6
-      - type: patch
-        path: patches/med-hdf5-1.12.patch
+        url: https://github.com/chennes/med/archive/refs/tags/v5.0.0.tar.gz
+        sha256: 8701f142087b87e8b74958fd0432498eadf28011b20ad05cf56bf911be081888
 
   - name: libspnav
     sources:
