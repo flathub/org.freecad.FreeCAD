@@ -198,8 +198,8 @@ modules:
   - name: boost
     buildsystem: simple
     build-commands:
-      - ./bootstrap.sh --prefix=/app --with-libraries=filesystem,program_options,regex,system,thread,date_time,chrono,atomic
-      - ./b2 install -j $FLATPAK_BUILDER_N_JOBS
+      - ./bootstrap.sh --prefix=/app --with-libraries=filesystem,program_options,regex,system,thread,python,date_time,chrono,atomic
+      - ./b2 install -j $FLATPAK_BUILDER_N_JOBS cxxflags="-I/usr/include/python3.11" 
     sources:
       - type: archive
         url: https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.bz2
@@ -684,8 +684,8 @@ modules:
       - pip3 install --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} packaging --no-build-isolation
     sources:
       - type: file
-        url: https://files.pythonhosted.org/packages/ec/1a/610693ac4ee14fcdf2d9bf3c493370e4f2ef7ae2e19217d7a237ff42367d/packaging-23.2-py3-none-any.whl
-        sha256: 8c491190033a9af7e1d931d0b5dacc2ef47509b34dd0de67ed209b5203fc88c7
+        url: https://files.pythonhosted.org/packages/08/aa/cc0199a5f0ad350994d660967a8efb233fe0416e4639146c089643407ce6/packaging-24.1-py3-none-any.whl
+        sha256: 5b8f2217dbdbd2f7f384c41c628544e6d52f2d0f53c6d0c3ea61aa5d1d7ff124
 
   # For the FEM workbench.
   - name: python3-pyyaml
@@ -736,6 +736,22 @@ modules:
       - type: git
         url: https://github.com/jbeder/yaml-cpp
         commit: f7320141120f720aecc4c32be25586e7da9eb978 # tag 0.8.0
+
+  - python3-scikit_build_core.json
+
+  - name: opencamlib
+    buildsystem: simple
+    build-commands:
+      - pip3 install --exists-action=i --ignore-installed --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} . --no-build-isolation
+    build-options:
+      env:
+        - CMAKE_ARGS: "${CMAKE_ARGS} -D BUILD_DOC:BOOL=OFF -D VERSION_STRING:STRING=2023.01.11"
+    sources:
+      - type: archive
+        url: https://github.com/aewallin/opencamlib/archive/2023.01.11/opencamlib-2023.01.11.tar.gz
+        sha256: 07fd9b61c39c4d600e441d67edbafc1015e9e3fabd88b561a647f98fedf31d41
+      - type: patch
+        path: patches/opencamlib-boost-shared-no-git-version-command.patch
 
   - name: FreeCAD
     buildsystem: cmake-ninja
