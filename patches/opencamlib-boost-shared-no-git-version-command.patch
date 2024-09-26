@@ -1,0 +1,277 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 4915cea..9c6a445 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -50,6 +50,9 @@ option(VERSION_STRING
+ option(USE_PY_3
+     "Use Python V3" ON)
+ 
++option(USE_STATIC_BOOST
++    "Use static boost" OFF)
++
+ if(NOT BUILD_CXX_LIB)
+   message(STATUS " Note: will NOT build pure c++ library")
+ endif()
+@@ -99,7 +102,9 @@ endif()
+ include_directories(${CMAKE_CURRENT_BINARY_DIR})
+ 
+ set(Boost_DEBUG ON CACHE BOOL "boost-debug")
+-set(Boost_USE_STATIC_LIBS ON CACHE BOOL "boost-use-static-libs")
++if(USE_STATIC_BOOST)
++  set(Boost_USE_STATIC_LIBS ON CACHE BOOL "boost-use-static-libs")
++endif()
+ if(DEFINED ENV{BOOST_ROOT} OR DEFINED BOOST_ROOT)
+   set(Boost_NO_SYSTEM_PATHS ON)
+ endif()
+@@ -160,40 +165,6 @@ if(USE_OPENMP)
+   endif()
+ endif()
+ 
+-if(EXISTS ${PROJECT_SOURCE_DIR}/version_string.hpp)
+-  file(STRINGS "${PROJECT_SOURCE_DIR}/version_string.hpp" PROJECT_BUILD_SPECIFICATION REGEX "^[ \t]*#define[ \t]+VERSION_STRING[ \t]+.*$")
+-  if(PROJECT_BUILD_SPECIFICATION)
+-    string(REGEX REPLACE ".*#define[ \t]+VERSION_STRING[ \t]+\"(.*)\".*" "\\1" MY_VERSION ${PROJECT_BUILD_SPECIFICATION})
+-  else()
+-    message(FATAL_ERROR "Data were not found for the required build specification.")
+-  endif()
+-  set(version_string ${PROJECT_SOURCE_DIR}/version_string.hpp)
+-else()
+-  ################ create version_string.hpp, http://stackoverflow.com/questions/3780667
+-  # include the output directory, where the version_string.hpp file is generated
+-  include_directories(${CMAKE_CURRENT_BINARY_DIR})
+-  if(VERSION_STRING)
+-    set( vstring "//version_string.hpp - written by cmake. changes will be lost!\n"
+-               "#ifndef VERSION_STRING\n"
+-               "#define VERSION_STRING \"${VERSION_STRING}\"\n"
+-               "#endif\n"
+-    )
+-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/version_string.hpp ${vstring} )
+-    set(MY_VERSION ${VERSION_STRING})
+-    set(version_string ${VERSION_STRING})
+-  else()
+-    include(version_string.cmake)
+-    # now parse the git commit id:
+-    string(REGEX REPLACE "([0-9]+).*" "\\1" GIT_MAJOR_VERSION "${GIT_COMMIT_ID}" )
+-    string(REGEX REPLACE "[0-9]+.([0-9]+)-.*" "\\1" GIT_MINOR_VERSION "${GIT_COMMIT_ID}" )
+-    string(REGEX REPLACE "[0-9]+.[0-9]+-(.*)-.*" "\\1" GIT_PATCH_VERSION "${GIT_COMMIT_ID}" )
+-    set(MY_VERSION "${GIT_MAJOR_VERSION}.${GIT_MINOR_VERSION}.${GIT_PATCH_VERSION}" CACHE STRING "name")
+-    set(version_string ${CMAKE_CURRENT_BINARY_DIR}/version_string.hpp)
+-  endif()
+-endif()
+-
+-message(STATUS "OpenCAMLib version: ${MY_VERSION}")
+-
+ # this defines the source-files
+ set(OCL_SRC
+   ${PROJECT_SOURCE_DIR}/ocl.cpp
+@@ -336,7 +307,7 @@ if(BUILD_DOC)
+       message(STATUS "dvips command DVIPS_CONVERTER not found but usually required.")
+     endif()
+ 
+-    configure_file(${PROJECT_SOURCE_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile COPYONLY)
++    configure_file(${PROJECT_SOURCE_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+     set(DOXY_CONFIG ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+ 
+     execute_process(
+diff --git a/src/Doxyfile b/src/Doxyfile
+index 7913358..9cc80ec 100644
+--- a/src/Doxyfile
++++ b/src/Doxyfile
+@@ -898,12 +898,11 @@ WARN_LOGFILE           =
+ # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
+ # Note: If this tag is empty the current directory is searched.
+ 
+-INPUT                  = "../src/manual.hpp" \
+-                         "../src/cutters" \
+-                         "../src/algo" \
+-                         "../src/geo" \
+-                         "../src/dropcutter" \
+-                         "../src/common"
++INPUT                  =  "@CMAKE_CURRENT_SOURCE_DIR@/cutters" \
++                          "@CMAKE_CURRENT_SOURCE_DIR@/algo" \
++                          "@CMAKE_CURRENT_SOURCE_DIR@/geo" \
++                          "@CMAKE_CURRENT_SOURCE_DIR@/dropcutter" \
++                          "@CMAKE_CURRENT_SOURCE_DIR@/common"
+ 
+ # This tag can be used to specify the character encoding of the source files
+ # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
+diff --git a/src/cxxlib/cxxlib.cmake b/src/cxxlib/cxxlib.cmake
+index 7c97e5d..c3dd4aa 100644
+--- a/src/cxxlib/cxxlib.cmake
++++ b/src/cxxlib/cxxlib.cmake
+@@ -8,6 +8,10 @@ add_library(ocl
+     ${OCL_COMMON_SRC}
+ )
+ 
++if(DEFINED VERSION_STRING)
++  target_compile_definitions(ocl PUBLIC VERSION_STRING="${VERSION_STRING}")
++endif()
++
+ if(WIN32)
+   # on windows, prefix the library with lib, and make sure the .lib file is installed as well
+   set_target_properties(ocl PROPERTIES
+diff --git a/src/emscriptenlib/emscriptenlib.cmake b/src/emscriptenlib/emscriptenlib.cmake
+index d857a87..fb5ff4f 100644
+--- a/src/emscriptenlib/emscriptenlib.cmake
++++ b/src/emscriptenlib/emscriptenlib.cmake
+@@ -25,6 +25,10 @@ add_executable(ocl
+ 	${PROJECT_SOURCE_DIR}/emscriptenlib/emscriptenlib.cpp
+ )
+ 
++if(DEFINED VERSION_STRING)
++  target_compile_definitions(ocl PUBLIC VERSION_STRING="${VERSION_STRING}")
++endif()
++
+ target_link_libraries(
+   ocl
+   ${Boost_LIBRARIES}
+diff --git a/src/nodejslib/nodejslib.cmake b/src/nodejslib/nodejslib.cmake
+index a39be70..8fead36 100644
+--- a/src/nodejslib/nodejslib.cmake
++++ b/src/nodejslib/nodejslib.cmake
+@@ -45,6 +45,11 @@ target_link_libraries(
+ 		Boost::boost
+ 		${CMAKE_JS_LIB}
+ )
++
++if(DEFINED VERSION_STRING)
++  target_compile_definitions(ocl PUBLIC VERSION_STRING="${VERSION_STRING}")
++endif()
++
+ if(USE_OPENMP)
+   target_link_libraries(ocl PRIVATE OpenMP::OpenMP_CXX)
+ endif()
+diff --git a/src/ocl.cpp b/src/ocl.cpp
+index 31e4f8e..580aa95 100644
+--- a/src/ocl.cpp
++++ b/src/ocl.cpp
+@@ -23,7 +23,6 @@
+ #ifdef _OPENMP
+ #include <omp.h>
+ #endif
+-#include "version_string.hpp"
+ 
+ namespace ocl
+ {
+diff --git a/src/ocl.hpp b/src/ocl.hpp
+index 5cd6149..583db84 100644
+--- a/src/ocl.hpp
++++ b/src/ocl.hpp
+@@ -23,6 +23,10 @@
+ 
+ #include <string>
+ 
++#ifndef VERSION_STRING
++#define VERSION_STRING "unknown-version"
++#endif
++
+ namespace ocl
+ {
+   int max_threads();
+diff --git a/src/pythonlib/ocl.cpp b/src/pythonlib/ocl.cpp
+index 72f0efc..b652a19 100644
+--- a/src/pythonlib/ocl.cpp
++++ b/src/pythonlib/ocl.cpp
+@@ -27,8 +27,6 @@
+ #include <boost/python.hpp>
+ #include <boost/python/docstring_options.hpp>
+ 
+-#include "version_string.hpp" // autogenerated by version_string.cmake
+-
+ std::string ocl_docstring() {
+     return "OpenCAMLib docstring";
+ }
+diff --git a/src/pythonlib/pythonlib.cmake b/src/pythonlib/pythonlib.cmake
+index 87b47e8..a352a84 100644
+--- a/src/pythonlib/pythonlib.cmake
++++ b/src/pythonlib/pythonlib.cmake
+@@ -25,6 +25,10 @@ MODULE
+   pythonlib/ocl.cpp
+ )
+ 
++if(DEFINED VERSION_STRING)
++  target_compile_definitions(ocl PUBLIC VERSION_STRING="${VERSION_STRING}")
++endif()
++
+ target_link_libraries(
+   ocl
+ PRIVATE
+diff --git a/src/version_string.cmake b/src/version_string.cmake
+deleted file mode 100644
+index 88ffc64..0000000
+--- a/src/version_string.cmake
++++ /dev/null
+@@ -1,73 +0,0 @@
+-#use git for a pretty commit id
+-#uses 'git describe --tags', so tags are required in the repo
+-#create a tag with 'git tag <name>' and 'git push --tags'
+-
+-#version_string.hpp will define VERSION_STRING to something like "test-1-g5e1fb47"
+-# where test is the name of the last tagged git revision, 1 is the number of commits since that tag,
+-# 'g' is ???, and 5e1fb47 is the first 7 chars of the git sha1 commit id.
+-
+-
+-find_package(Git)
+-
+-if(NOT GIT_FOUND)
+-    # cmake 2.8.1 (in Lucid) does not have a git Cmake interface
+-    # cmake 2.8.5 (in Oneiric) does have it
+-    message(STATUS "couldn't find Cmake interface to git, old version of Cmake?  looking by hand...")
+-    execute_process(
+-        COMMAND git --version
+-        RESULT_VARIABLE RC
+-    )
+-    if (${RC} EQUAL 0)
+-        set(GIT_FOUND 1)
+-        set(GIT_EXECUTABLE "git")
+-    else()
+-        message(ERROR "couldn't run git executable!")
+-    endif()
+-endif()
+-
+-if(GIT_FOUND)
+-    execute_process(
+-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+-        COMMAND ${GIT_EXECUTABLE} describe --tags 
+-        RESULT_VARIABLE res_var 
+-        OUTPUT_VARIABLE GIT_COM_ID 
+-        OUTPUT_STRIP_TRAILING_WHITESPACE
+-        ERROR_QUIET
+-    )
+-    if( NOT ${res_var} EQUAL 0 )
+-        message( WARNING "Git failed (not a repo, or no tags)." )
+-        file(READ "git-tag.txt" GIT_COM_ID)
+-        string( REPLACE "\n" "" GIT_COMMIT_ID ${GIT_COM_ID} )
+-        message( STATUS "version_string.cmake read from file GIT_COMMIT_ID: " ${GIT_COMMIT_ID})
+-    else()
+-        string( REPLACE "\n" "" GIT_COMMIT_ID ${GIT_COM_ID} )
+-        message( STATUS "version_string.cmake git set GIT_COMMIT_ID: " ${GIT_COMMIT_ID})
+-    endif()
+-    
+-else()
+-    # if we don't have git, try to read git-tag from file instead
+-    file(READ "git-tag.txt" GIT_COMMIT_ID)
+-    
+-    #set( GIT_COMMIT_ID "unknown (git not found!)")
+-    message( STATUS "version_string.cmake read from file git-tag.txt: " ${GIT_COMMIT_ID})
+-    #message( WARNING "Git not found. Reading tag from git-tag.txt instead: " ${GIT_COMMIT_ID})
+-endif()
+-
+-set( vstring "//version_string.hpp - written by cmake. changes will be lost!\n"
+-             "#ifndef VERSION_STRING\n"
+-             "#define VERSION_STRING \"${GIT_COMMIT_ID}\"\n"
+-             "#endif\n"
+-)
+-
+-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/version_string.hpp ${vstring} )
+-set_source_files_properties(
+-    ${CMAKE_CURRENT_BINARY_DIR}/version_string.hpp
+-    PROPERTIES GENERATED TRUE
+-    HEADER_FILE_ONLY TRUE
+-)
+-
+-# copy the file to the final header only if the version changes
+-# reduces needless rebuilds
+-#execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different
+-#                        version_string.hpp.txt /version_string.hpp)
+-
