@@ -539,13 +539,13 @@ modules:
       - type: archive
         url: https://github.com/CGAL/cgal/releases/download/v5.3.1/CGAL-5.3.1.tar.xz
         sha256: ab76633b023d72ea3ca9ad22e2fa39ed3b5c8fb4e2c091a78035fabb5eb3fccf
-
   - name: nlohmann-json
     buildsystem: cmake-ninja
     sources:
       - type: archive
         url: https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.tar.gz
         sha256: 0d8ef5af7f9794e3263480193c491549b2ba6cc74bb018906202ada498a79406
+  - python3-lark.json
 
   - name: IfcOpenShell
     buildsystem: cmake-ninja
