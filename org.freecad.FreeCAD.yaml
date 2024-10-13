@@ -597,10 +597,8 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
     sources:
       - type: archive
-        url: http://deb.debian.org/debian/pool/main/l/lapack/lapack_3.8.0.orig.tar.gz
-        sha256: deb22cc4a6120bff72621155a9917f485f96ef8319ac074a7afbc68aab88bcf6
-        mirror-urls:
-          - http://www.netlib.org/lapack/lapack-3.8.0.tar.gz # can be slow
+        url: https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.10.1.tar.gz
+        sha256: cd005cd021f144d7d5f7f33c943942db9f03a28d110d6a3b80d718a295f7f714
 
   - name: arpack
     buildsystem: cmake-ninja
@@ -613,8 +611,8 @@ modules:
         FCFLAGS: -fallow-argument-mismatch
     sources:
       - type: archive
-        url: https://github.com/opencollab/arpack-ng/archive/3.6.3.tar.gz
-        sha256: 64f3551e5a2f8497399d82af3076b6a33bf1bc95fc46bbcabe66442db366f453
+        url: https://github.com/opencollab/arpack-ng/archive/refs/tags/3.7.0.tar.gz
+        sha256: 972e3fc3cd0b9d6b5a737c9bf6fd07515c0d6549319d4ffb06970e64fa3cc2d6
 
   - name: spooles
     buildsystem: simple
@@ -640,8 +638,8 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
     sources:
       - type: archive
-        url: https://github.com/xianyi/OpenBLAS/archive/v0.3.9.tar.gz
-        sha256: 17d4677264dfbc4433e97076220adc79b050e4f8a083ea3f853a53af253bc380
+        url: https://github.com/OpenMathLib/OpenBLAS/archive/refs/tags/v0.3.28.tar.gz
+        sha256: f1003466ad074e9b0c8d421a204121100b0751c96fc6fcf3d1456bd12f8a00a1
 
   - name: calculix-ccx
     buildsystem: simple
