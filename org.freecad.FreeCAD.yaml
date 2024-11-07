@@ -695,7 +695,7 @@ modules:
         url: https://files.pythonhosted.org/packages/54/ed/79a089b6be93607fa5cdaedf301d7dfb23af5f25c398d5ead2525b063e17/pyyaml-6.0.2.tar.gz
         sha256: d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e
 
-  # For the Arch workbench to generate Solar diagrams.
+  # For the BIM workbench to generate Solar diagrams.
   # https://github.com/flathub/org.freecadweb.FreeCAD/issues/114
   - name: python3-pysolar
     buildsystem: simple
@@ -705,6 +705,9 @@ modules:
       - type: file
         url: https://files.pythonhosted.org/packages/5e/74/c78d4ff1c8b9d1f718f57d58afa7125f1610b09005298afb1047081e952d/pysolar-0.10-py3-none-any.whl
         sha256: 99aa506d4eba41a83308a6772779ffcafcbe8afa595e80b8eafb1ed85b561446
+
+  # required by BIM wokrbench https://github.com/FreeCAD/FreeCAD/issues/17560
+  - python3-requests.json
 
   # For add-on manager
   - name: python3-pip
