@@ -760,6 +760,7 @@ modules:
     buildsystem: cmake-ninja
     builddir: true
     config-opts:
+      - -DFC_FLATPAK=ON
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - -DENABLE_DEVELOPER_TEST=OFF
       - -DCMAKE_INSTALL_PREFIX=/app/freecad
