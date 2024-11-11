@@ -234,8 +234,8 @@ modules:
       - -DPIVY_USE_QT6=ON
     sources:
       - type: archive
-        url: https://github.com/coin3d/pivy/archive/refs/tags/0.6.9.a0.tar.gz
-        sha256: 2c2da80ae216fe06394562f4a8fc081179d678f20bf6f8ec412cda470d7eeb91
+        url: https://github.com/coin3d/pivy/archive/refs/tags/0.6.9.tar.gz
+        sha256: c207f5ed73089b2281356da4a504c38faaab90900b95639c80772d9d25ba0bbc
       - type: shell
         commands:
           - sed -i 's|${Python_SITEARCH}|/app/lib/python3.11/site-packages/|g' {*/,./}CMakeLists.txt
