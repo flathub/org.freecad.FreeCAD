@@ -1,0 +1,32 @@
+From 65ecb92c034486267bd41f868494c3570e460838 Mon Sep 17 00:00:00 2001
+From: Chris Mayo <aklhfex@gmail.com>
+Date: Sun, 20 Oct 2024 12:27:00 +0100
+Subject: [PATCH] python: Fix ifcopenshell.guid.new()
+
+pyException:
+
+<class 'AttributeError'>: module 'ifcopenshell' has no attribute 'guid'
+---
+ src/ifcopenshell-python/ifcopenshell/__init__.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/ifcopenshell-python/ifcopenshell/__init__.py b/src/ifcopenshell-python/ifcopenshell/__init__.py
+index 110a38c85ba..63dfe88dfd0 100644
+--- a/src/ifcopenshell-python/ifcopenshell/__init__.py
++++ b/src/ifcopenshell-python/ifcopenshell/__init__.py
+@@ -86,6 +86,7 @@
+     raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
+ 
+ from .file import file
++from . import guid
+ from .entity_instance import entity_instance, register_schema_attributes
+ from .sql import sqlite, sqlite_entity
+ 
+@@ -94,6 +95,7 @@
+ __all__ = [
+     "ifcopenshell_wrapper",
+     "file",
++    "guid",
+     "entity_instance",
+     "sqlite",
+     "sqlite_entity",

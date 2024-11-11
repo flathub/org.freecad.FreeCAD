@@ -588,7 +588,9 @@ modules:
       - type: patch
         paths:
           - patches/IfcOpenShell-hdf5.patch
-          #- patches/IfcOpenShell-occt7.8.patch
+          # TODO: remove this patch once we update to >=0.8.1
+          # see https://github.com/FreeCAD/FreeCAD/pull/17327#issuecomment-2424863106
+          - patches/IfcOpenShell-fix-export.patch
 
   - name: lapack
     buildsystem: cmake-ninja
