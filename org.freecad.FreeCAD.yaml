@@ -762,7 +762,7 @@ modules:
     config-opts:
       - -DFC_FLATPAK=ON
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
-      - -DENABLE_DEVELOPER_TEST=OFF
+      - -DENABLE_DEVELOPER_TESTS=OFF
       - -DCMAKE_INSTALL_PREFIX=/app/freecad
       - -DCMAKE_INSTALL_DATAROOTDIR=/app/share
       # While redundant (this triggers a warning with the linter) removing this
