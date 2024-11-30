@@ -7,9 +7,9 @@ command: FreeCAD
 rename-mime-icons:
   - application-x-extension-fcstd
 finish-args:
-  - --env=QT_QPA_PLATFORM=xcb
   - --share=ipc
-  - --socket=x11
+  - --socket=wayland
+  - --socket=fallback-x11
   - --device=dri
   - --share=network
   - --filesystem=host # needed to make file saving work
