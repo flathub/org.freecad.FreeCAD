@@ -781,6 +781,8 @@ modules:
         url: https://github.com/FreeCAD/FreeCAD.git
         commit: 2fcc5317fe3aee96ca73475986a577719fc78e20 # tag 1.0.0
       - type: patch
+        path: patches/issue18435.patch
+      - type: patch
         path: patches/OpenSCAD_transfermechanism.patch
       - type: file
         path: openscad.sh
