@@ -1,16 +1,3 @@
-diff --git a/src/Gui/PreferencePacks/FreeCAD Classic/FreeCAD Classic.cfg b/src/Gui/PreferencePacks/FreeCAD Classic/FreeCAD Classic.cfg
-index e05cfdfba97..395704ea05e 100644
---- a/src/Gui/PreferencePacks/FreeCAD Classic/FreeCAD Classic.cfg	
-+++ b/src/Gui/PreferencePacks/FreeCAD Classic/FreeCAD Classic.cfg	
-@@ -257,7 +257,7 @@
-             <FCFloat Name="meshdeflection" Value="0.000000000000"/>
-             <FCText Name="openscadexecutable"></FCText>
-             <FCText Name="transferdirectory"></FCText>
--            <FCInt Name="transfermechanism" Value="0"/>
-+            <FCInt Name="transfermechanism" Value="2"/>
-             <FCBool Name="printVerbose" Value="0"/>
-             <FCBool Name="useViewProviderTree" Value="0"/>
-             <FCBool Name="useMultmatrixFeature" Value="0"/>
 diff --git a/src/Mod/OpenSCAD/Init.py b/src/Mod/OpenSCAD/Init.py
 index 9493cd8d7e7..eac87dd2c9d 100644
 --- a/src/Mod/OpenSCAD/Init.py
