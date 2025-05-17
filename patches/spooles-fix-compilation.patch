@@ -1,0 +1,38 @@
+# https://github.com/conda-forge/spooles-feedstock/blob/9c9bac0ec750da8b9914bb48335ffef54b8462f0/recipe/patches/osx.patch
+commit 32466b7e010aa17caa1597b7cfb42c4251c68140
+Author: looooo <sppedflyer@gmail.com>
+Date:   Mon Jul 22 17:28:13 2024 +0200
+
+    osx.patch
+
+diff --git a/ETree/src/transform.c b/ETree/src/transform.c
+index 1e36981..dbdfc70 100644
+--- a/ETree/src/transform.c
++++ b/ETree/src/transform.c
+@@ -291,7 +291,7 @@ etree2 = ETree_compress(etree, mapIV) ;
+    remap the nzeros[] vector
+    -------------------------
+ */
+-temp = IVinit(nfront, NULL) ;
++temp = IVinit(nfront, 0) ;
+ IVcopy(nfront, temp, nzeros) ;
+ IV_setSize(nzerosIV, nnew) ;
+ nzeros = IV_entries(nzerosIV) ;
+@@ -453,7 +453,7 @@ etree2 = ETree_compress(etree, mapIV) ;
+    remap the nzeros[] vector
+    -------------------------
+ */
+-temp = IVinit(nfront, NULL) ;
++temp = IVinit(nfront, 0) ;
+ IVcopy(nfront, temp, nzeros) ;
+ IV_setSize(nzerosIV, nnew) ;
+ nzeros = IV_entries(nzerosIV) ;
+@@ -614,7 +614,7 @@ etree2 = ETree_compress(etree, mapIV) ;
+    remap the nzeros[] vector
+    -------------------------
+ */
+-temp = IVinit(nfront, NULL) ;
++temp = IVinit(nfront, 0) ;
+ IVcopy(nfront, temp, nzeros) ;
+ IV_setSize(nzerosIV, nnew) ;
+ nzeros = IV_entries(nzerosIV) ;
