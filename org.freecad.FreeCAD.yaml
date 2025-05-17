@@ -1,7 +1,6 @@
 app-id: org.freecad.FreeCAD
-app-id: org.freecad.FreeCAD
 runtime: org.kde.Platform
-runtime-version: '6.7'
+runtime-version: '6.9'
 sdk: org.kde.Sdk
 command: FreeCAD
 rename-mime-icons:
@@ -19,7 +18,7 @@ finish-args:
   - --env=TMPDIR=/var/tmp
   - --env=SPNAV_SOCKET=/run/spnav.sock
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.llvm15
+  - org.freedesktop.Sdk.Extension.llvm18
 cleanup:
   - /include
   - /share/aclocal
@@ -29,8 +28,8 @@ cleanup:
   - '*.a'
   - '*.la'
 build-options:
-  append-path: /usr/lib/sdk/llvm15/bin
-  append-ld-library-path: /usr/lib/sdk/llvm15/lib
+  append-path: /usr/lib/sdk/llvm18/bin
+  append-ld-library-path: /usr/lib/sdk/llvm18/lib
 modules:
 
   - shared-modules/glu/glu-9.json
@@ -39,8 +38,8 @@ modules:
     buildsystem: cmake-ninja
     builddir: true
     build-options:
-      cxxflags: -I/run/build/pyside/sources/shiboken6/libshiboken/signature -I/usr/include/python3.11
-      cflags: -I/usr/include/python3.11
+      cxxflags: -I/run/build/pyside/sources/shiboken6/libshiboken/signature -I/usr/include/python3.12
+      cflags: -I/usr/include/python3.12
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DBUILD_TESTS=OFF
@@ -50,8 +49,8 @@ modules:
       - /bin
     sources:
       - type: archive
-        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.7.2-src/pyside-setup-everywhere-src-6.7.2.tar.xz
-        sha256: 3a2b0d0d6e78c9aa5ddc7f06ca4b6f11a3fe14560baeb148eea53b5d98e368c7
+        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.9.0-src/pyside-setup-everywhere-src-6.9.0.tar.xz
+        sha256: 315b73bb7570d5b9e6793a8d3fafd1d2dd7f43d35eebb01d2b554ea206aad88e
       - type: shell
         commands:
           - cp -R /usr/include/Qt* sources/pyside6/PySide6/
@@ -66,8 +65,8 @@ modules:
           - -DFORCE_LIMITED_API=OFF
         sources:
           - type: archive
-            url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.7.2-src/pyside-setup-everywhere-src-6.7.2.tar.xz
-            sha256: 3a2b0d0d6e78c9aa5ddc7f06ca4b6f11a3fe14560baeb148eea53b5d98e368c7
+            url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.9.0-src/pyside-setup-everywhere-src-6.9.0.tar.xz
+            sha256: 315b73bb7570d5b9e6793a8d3fafd1d2dd7f43d35eebb01d2b554ea206aad88e
 
   - name: swig
     config-opts:
@@ -107,10 +106,11 @@ modules:
     post-install:
       # Needed for graphviz
       - ln -s tclsh8.6 /app/bin/tclsh
+      - chmod -R u+w ${FLATPAK_DEST}/lib/libtcl*
     sources:
       - type: archive
-        url: https://downloads.sourceforge.net/project/tcl/Tcl/8.6.8/tcl8.6.8-src.tar.gz
-        sha256: c43cb0c1518ce42b00e7c8f6eaddd5195c53a98f94adc717234a65cbcfd3f96a
+        url: https://downloads.sourceforge.net/project/tcl/Tcl/8.6.16/tcl8.6.16-src.tar.gz
+        sha256: 91cb8fa61771c63c262efb553059b7c7ad6757afa5857af6265e4b0bdc2a14a5
 
   - name: tk
     subdir: unix
@@ -118,13 +118,15 @@ modules:
       no-debuginfo: true
     make-install-args:
       - install-private-headers
+    post-install:
+      - chmod -R u+w ${FLATPAK_DEST}/lib/libtk*
     cleanup:
       - /bin
       - /man
     sources:
       - type: archive
-        url: https://downloads.sourceforge.net/project/tcl/Tcl/8.6.8/tk8.6.8-src.tar.gz
-        sha256: 49e7bca08dde95195a27f594f7c850b088be357a7c7096e44e1158c7a5fd7b33
+        url: https://downloads.sourceforge.net/project/tcl/Tcl/8.6.16/tk8.6.16-src.tar.gz
+        sha256: be9f94d3575d4b3099d84bc3c10de8994df2d7aa405208173c709cc404a7e5fe
 
   - name: graphviz
     sources:
@@ -145,8 +147,8 @@ modules:
       - /share/doc
     sources:
       - type: archive
-        url: https://archive.apache.org/dist/xerces/c/3/sources/xerces-c-3.2.2.tar.xz
-        sha256: 6daca3b23364d8d883dc77a73f681242f69389e3564543287ed3d073007e0a8e
+        url: https://archive.apache.org/dist/xerces/c/3/sources/xerces-c-3.2.5.tar.xz
+        sha256: 6239e6035645b21bc9bf7f02004db334dce3fe6d85428ee4fe7e180c2d948230
 
   - name: openmpi
     cleanup:
@@ -195,9 +197,11 @@ modules:
 
   - name: boost
     buildsystem: simple
+    build-options:
+      cxxflags: -I/usr/include/python3.12
     build-commands:
       - ./bootstrap.sh --prefix=/app --with-libraries=filesystem,program_options,regex,system,thread,python,date_time,chrono,atomic
-      - ./b2 install -j $FLATPAK_BUILDER_N_JOBS cxxflags="-I/usr/include/python3.11" 
+      - ./b2 install -j $FLATPAK_BUILDER_N_JOBS
     sources:
       - type: archive
         url: https://archives.boost.io/release/1.84.0/source/boost_1_84_0.tar.bz2
@@ -236,7 +240,7 @@ modules:
         sha256: c207f5ed73089b2281356da4a504c38faaab90900b95639c80772d9d25ba0bbc
       - type: shell
         commands:
-          - sed -i 's|${Python_SITEARCH}|/app/lib/python3.11/site-packages/|g' {*/,./}CMakeLists.txt
+          - sed -i 's|${Python_SITEARCH}|/app/lib/python3.12/site-packages/|g' {*/,./}CMakeLists.txt
 
   - name: Cython
     buildsystem: simple
@@ -521,8 +525,10 @@ modules:
       - --enable-fat
     sources:
       - type: archive
-        url: https://gmplib.org/download/gmp/gmp-6.2.1.tar.bz2
+        url: https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.bz2
         sha256: eae9326beb4158c386e39a356818031bd28f3124cf915f8c5b1dc4c7a36b4d7c
+        mirror-urls:
+          - https://gmplib.org/download/gmp/gmp-6.2.1.tar.bz2
   - name: cgal
     cleanup:
       - /include
