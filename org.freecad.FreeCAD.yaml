@@ -667,17 +667,10 @@ modules:
 
   # required by BIM wokrbench https://github.com/FreeCAD/FreeCAD/issues/17560
   - python3-requests.json
-
+  # build dependency for opencamlib
+  - python3-scikit_build_core.json
   # For add-on manager
-  - name: python3-pip
-    buildsystem: simple
-    build-commands:
-      # ignore installed because it's in the SDK
-      - pip3 install --exists-action=i --ignore-installed --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} "pip" --no-build-isolation
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/1f/2c/d9626f045e7b49a6225c6b09257861f24da78f4e5f23af2ddbdf852c99b8/pip-22.2.2-py3-none-any.whl
-        sha256: b61a374b5bc40a6e982426aede40c9b5a08ff20e640f5b56977f4f91fed1e39a
+  - python3-pip.json
 
   - name: fmt
     buildsystem: cmake-ninja
@@ -696,8 +689,6 @@ modules:
       - type: git
         url: https://github.com/jbeder/yaml-cpp
         commit: f7320141120f720aecc4c32be25586e7da9eb978 # tag 0.8.0
-
-  - python3-scikit_build_core.json
 
   - name: opencamlib
     buildsystem: simple
