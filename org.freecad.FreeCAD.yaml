@@ -209,7 +209,7 @@ modules:
         sha256: c207f5ed73089b2281356da4a504c38faaab90900b95639c80772d9d25ba0bbc
       - type: shell
         commands:
-          - sed -i 's|${Python_SITEARCH}|/app/lib/python3.11/site-packages/|g' {*/,./}CMakeLists.txt
+          - sed -i 's|${Python_SITEARCH}|/app/lib/python3.12/site-packages/|g' {*/,./}CMakeLists.txt
 
   - name: Cython
     buildsystem: simple
