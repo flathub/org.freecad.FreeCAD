@@ -39,7 +39,6 @@ modules:
     buildsystem: cmake-ninja
     builddir: true
     build-options:
-      cxxflags: -I/run/build/pyside/sources/shiboken6/libshiboken/signature -I/usr/include/python3.11
       cflags: -I/usr/include/python3.12
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
@@ -197,7 +196,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/coin3d/soqt.git
-        commit: 17364833049d3855f5e9e0f7908eb5ba08209318 # tag v1.6.2
+        commit: 6f844aba9801cb462080337e8bacee2b142dc1d5 # tag v1.6.3
 
   - name: pivy
     buildsystem: cmake-ninja
@@ -205,11 +204,13 @@ modules:
       - -DPIVY_USE_QT6=ON
     sources:
       - type: archive
-        url: https://github.com/coin3d/pivy/archive/refs/tags/0.6.9.tar.gz
-        sha256: c207f5ed73089b2281356da4a504c38faaab90900b95639c80772d9d25ba0bbc
+        url: https://github.com/coin3d/pivy/archive/refs/tags/0.6.10.tar.gz
+        sha256: 7b409816c9fad84cf94f93659281f9dd2501d285eb2fc609e9401a3d004ce723
       - type: shell
         commands:
-          - sed -i 's|${Python_SITEARCH}|/app/lib/python3.12/site-packages/|g' {*/,./}CMakeLists.txt
+          - |
+            sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"].replace("/usr","/app"))')
+            sed -i "s|\${Python_SITEARCH}|$sitepackagesDir|" {*/,./}CMakeLists.txt
 
   - name: Cython
     buildsystem: simple
@@ -745,5 +746,5 @@ modules:
             sed -i 's|${PACKAGE_WCURL}|https://github.com/FreeCAD/FreeCAD.git|' src/Build/Version.h.cmake
           - | # fix paths for flatpak environment
             sed -i 's|/usr|/app|g' cMake/FindOCC.cmake src/Gui/GraphvizView.cpp
-            sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"])' | sed 's|/usr|/app|')
-            sed -i 's|${python_libs}|'"$sitepackagesDir"'|' src/Ext/freecad/CMakeLists.txt
+            sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"].replace("/usr","/app"))')
+            sed -i "s|\${python_libs}|$sitepackagesDir|" src/Ext/freecad/CMakeLists.txt
