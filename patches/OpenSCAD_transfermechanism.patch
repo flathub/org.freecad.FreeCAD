@@ -1,28 +1,15 @@
-diff --git a/src/Gui/PreferencePacks/FreeCAD Classic/FreeCAD Classic.cfg b/src/Gui/PreferencePacks/FreeCAD Classic/FreeCAD Classic.cfg
-index e05cfdfba97..395704ea05e 100644
---- a/src/Gui/PreferencePacks/FreeCAD Classic/FreeCAD Classic.cfg	
-+++ b/src/Gui/PreferencePacks/FreeCAD Classic/FreeCAD Classic.cfg	
-@@ -257,7 +257,7 @@
-             <FCFloat Name="meshdeflection" Value="0.000000000000"/>
-             <FCText Name="openscadexecutable"></FCText>
-             <FCText Name="transferdirectory"></FCText>
--            <FCInt Name="transfermechanism" Value="0"/>
-+            <FCInt Name="transfermechanism" Value="2"/>
-             <FCBool Name="printVerbose" Value="0"/>
-             <FCBool Name="useViewProviderTree" Value="0"/>
-             <FCBool Name="useMultmatrixFeature" Value="0"/>
 diff --git a/src/Mod/OpenSCAD/Init.py b/src/Mod/OpenSCAD/Init.py
 index 9493cd8d7e7..eac87dd2c9d 100644
 --- a/src/Mod/OpenSCAD/Init.py
 +++ b/src/Mod/OpenSCAD/Init.py
 @@ -30,7 +30,7 @@ FreeCAD.addImportType("OpenSCAD CSG Format (*.csg *.CSG)", "importCSG")
- 
+
  param = FreeCAD.ParamGet(\
          "User parameter:BaseApp/Preferences/Mod/OpenSCAD")
 -openscadfilename = param.GetString('openscadexecutable')
 +openscadfilename = param.GetString('openscadexecutable','/app/bin/openscad')
  openscadbin = openscadfilename and os.path.isfile(openscadfilename)
- 
+
  if openscadbin:
 diff --git a/src/Mod/OpenSCAD/InitGui.py b/src/Mod/OpenSCAD/InitGui.py
 index 396227c1e85..237018d7d35 100644
@@ -31,7 +18,7 @@ index 396227c1e85..237018d7d35 100644
 @@ -118,7 +118,7 @@ class OpenSCADWorkbench(Workbench):
          else:
              FreeCAD.Console.PrintWarning("OpenSCAD executable not found\n")
- 
+
 -        transferMechanism = param.GetInt("transfermechanism", 0)
 +        transferMechanism = param.GetInt("transfermechanism", 2)
          if openscadfilename and transferMechanism == 0:
@@ -42,7 +29,7 @@ index 1db444ec80f..562aa78fe56 100644
 --- a/src/Mod/OpenSCAD/OpenSCADTest/app/test_importCSG.py
 +++ b/src/Mod/OpenSCAD/OpenSCADTest/app/test_importCSG.py
 @@ -277,7 +277,7 @@ polyhedron(
- 
+
      def test_import_import_stl(self):
          preferences = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/OpenSCAD")
 -        transfer_mechanism = preferences.GetInt('transfermechanism',0)
@@ -51,7 +38,7 @@ index 1db444ec80f..562aa78fe56 100644
              print ("Cannot test STL import, communication with OpenSCAD is via pipes")
              print ("If either OpenSCAD or FreeCAD are installed as sandboxed packages,")
 @@ -335,7 +335,7 @@ resize(newsize = [0,0,10], auto = [0,0,0]) {
- 
+
      def test_import_surface(self):
          preferences = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/OpenSCAD")
 -        transfer_mechanism = preferences.GetInt('transfermechanism',0)
@@ -83,7 +70,7 @@ index 36bf78a220d..468344f0c12 100644
              stdout = subprocess.PIPE,stderr=subprocess.PIPE, universal_newlines=True) as p:
 @@ -159,8 +159,8 @@ def callopenscad(inputfilename,outputfilename=None, outputext='csg', keepname=Fa
              return stdoutd
- 
+
      preferences = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/OpenSCAD")
 -    osfilename = preferences.GetString('openscadexecutable')
 -    transferMechanism = preferences.GetInt('transfermechanism',0)

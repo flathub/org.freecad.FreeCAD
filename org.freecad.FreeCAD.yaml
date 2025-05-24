@@ -1,7 +1,7 @@
 app-id: org.freecad.FreeCAD
 app-id: org.freecad.FreeCAD
 runtime: org.kde.Platform
-runtime-version: '6.7'
+runtime-version: '6.9'
 sdk: org.kde.Sdk
 command: FreeCAD
 rename-mime-icons:
@@ -19,7 +19,7 @@ finish-args:
   - --env=TMPDIR=/var/tmp
   - --env=SPNAV_SOCKET=/run/spnav.sock
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.llvm15
+  - org.freedesktop.Sdk.Extension.llvm18
 cleanup:
   - /include
   - /share/aclocal
@@ -29,8 +29,8 @@ cleanup:
   - '*.a'
   - '*.la'
 build-options:
-  append-path: /usr/lib/sdk/llvm15/bin
-  append-ld-library-path: /usr/lib/sdk/llvm15/lib
+  append-path: /usr/lib/sdk/llvm18/bin
+  append-ld-library-path: /usr/lib/sdk/llvm18/lib
 modules:
 
   - shared-modules/glu/glu-9.json
@@ -39,8 +39,7 @@ modules:
     buildsystem: cmake-ninja
     builddir: true
     build-options:
-      cxxflags: -I/run/build/pyside/sources/shiboken6/libshiboken/signature -I/usr/include/python3.11
-      cflags: -I/usr/include/python3.11
+      cflags: -I/usr/include/python3.12
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DBUILD_TESTS=OFF
@@ -50,8 +49,8 @@ modules:
       - /bin
     sources:
       - type: archive
-        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.7.2-src/pyside-setup-everywhere-src-6.7.2.tar.xz
-        sha256: 3a2b0d0d6e78c9aa5ddc7f06ca4b6f11a3fe14560baeb148eea53b5d98e368c7
+        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.9.0-src/pyside-setup-everywhere-src-6.9.0.tar.xz
+        sha256: 315b73bb7570d5b9e6793a8d3fafd1d2dd7f43d35eebb01d2b554ea206aad88e
       - type: shell
         commands:
           - cp -R /usr/include/Qt* sources/pyside6/PySide6/
@@ -66,8 +65,8 @@ modules:
           - -DFORCE_LIMITED_API=OFF
         sources:
           - type: archive
-            url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.7.2-src/pyside-setup-everywhere-src-6.7.2.tar.xz
-            sha256: 3a2b0d0d6e78c9aa5ddc7f06ca4b6f11a3fe14560baeb148eea53b5d98e368c7
+            url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.9.0-src/pyside-setup-everywhere-src-6.9.0.tar.xz
+            sha256: 315b73bb7570d5b9e6793a8d3fafd1d2dd7f43d35eebb01d2b554ea206aad88e
 
   - name: swig
     config-opts:
@@ -97,35 +96,6 @@ modules:
         url: https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.bz2
         sha256: 685adf14bd8e9c015b78097c1dc22f2f01343756f196acdc76a678e1ae352e11
 
-  - name: tcl
-    subdir: unix
-    build-options:
-      no-debuginfo: true
-    cleanup:
-      - /bin
-      - /man
-    post-install:
-      # Needed for graphviz
-      - ln -s tclsh8.6 /app/bin/tclsh
-    sources:
-      - type: archive
-        url: https://downloads.sourceforge.net/project/tcl/Tcl/8.6.8/tcl8.6.8-src.tar.gz
-        sha256: c43cb0c1518ce42b00e7c8f6eaddd5195c53a98f94adc717234a65cbcfd3f96a
-
-  - name: tk
-    subdir: unix
-    build-options:
-      no-debuginfo: true
-    make-install-args:
-      - install-private-headers
-    cleanup:
-      - /bin
-      - /man
-    sources:
-      - type: archive
-        url: https://downloads.sourceforge.net/project/tcl/Tcl/8.6.8/tk8.6.8-src.tar.gz
-        sha256: 49e7bca08dde95195a27f594f7c850b088be357a7c7096e44e1158c7a5fd7b33
-
   - name: graphviz
     sources:
       - type: archive
@@ -145,8 +115,10 @@ modules:
       - /share/doc
     sources:
       - type: archive
-        url: https://archive.apache.org/dist/xerces/c/3/sources/xerces-c-3.2.2.tar.xz
-        sha256: 6daca3b23364d8d883dc77a73f681242f69389e3564543287ed3d073007e0a8e
+        url: https://downloads.apache.org/xerces/c/3/sources/xerces-c-3.3.0.tar.gz
+        sha256: 9555f1d06f82987fbb4658862705515740414fd34b4db6ad2ed76a2dc08d3bde
+      - type: patch
+        path: patches/xerces-c-cxx17.patch
 
   - name: openmpi
     cleanup:
@@ -190,14 +162,14 @@ modules:
   - name: libspnav
     sources:
       - type: archive
-        url: https://github.com/FreeSpacenav/libspnav/releases/download/v1.1/libspnav-1.1.tar.gz
-        sha256: 04b297f68a10db4fa40edf68d7f823ba7b9d0442f2b665181889abe2cea42759
+        url: https://github.com/FreeSpacenav/libspnav/releases/download/v1.2/libspnav-1.2.tar.gz
+        sha256: 093747e7e03b232e08ff77f1ad7f48552c06ac5236316a5012db4269951c39db
 
   - name: boost
     buildsystem: simple
     build-commands:
       - ./bootstrap.sh --prefix=/app --with-libraries=filesystem,program_options,regex,system,thread,python,date_time,chrono,atomic
-      - ./b2 install -j $FLATPAK_BUILDER_N_JOBS cxxflags="-I/usr/include/python3.11" 
+      - ./b2 install -j $FLATPAK_BUILDER_N_JOBS
     sources:
       - type: archive
         url: https://archives.boost.io/release/1.84.0/source/boost_1_84_0.tar.bz2
@@ -224,7 +196,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/coin3d/soqt.git
-        commit: 17364833049d3855f5e9e0f7908eb5ba08209318 # tag v1.6.2
+        commit: 6f844aba9801cb462080337e8bacee2b142dc1d5 # tag v1.6.3
 
   - name: pivy
     buildsystem: cmake-ninja
@@ -232,11 +204,13 @@ modules:
       - -DPIVY_USE_QT6=ON
     sources:
       - type: archive
-        url: https://github.com/coin3d/pivy/archive/refs/tags/0.6.9.tar.gz
-        sha256: c207f5ed73089b2281356da4a504c38faaab90900b95639c80772d9d25ba0bbc
+        url: https://github.com/coin3d/pivy/archive/refs/tags/0.6.10.tar.gz
+        sha256: 7b409816c9fad84cf94f93659281f9dd2501d285eb2fc609e9401a3d004ce723
       - type: shell
         commands:
-          - sed -i 's|${Python_SITEARCH}|/app/lib/python3.11/site-packages/|g' {*/,./}CMakeLists.txt
+          - |
+            sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"].replace("/usr","/app"))')
+            sed -i "s|\${Python_SITEARCH}|$sitepackagesDir|" {*/,./}CMakeLists.txt
 
   - name: Cython
     buildsystem: simple
@@ -247,18 +221,9 @@ modules:
         url: https://files.pythonhosted.org/packages/2a/97/8cc3fe7c6de4796921236a64d00ca8a95565772e57f0d3caae68d880b592/Cython-0.29.37.tar.gz
         sha256: f813d4a6dd94adee5d4ff266191d1d95bf6d4164a4facc535422c021b2504cfb
 
-  - name: numpy
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py build -j 1 install --prefix=/app
-    cleanup:
-      - /bin
-      - /lib/python3.*/site-packages/numpy/tests
-      - /lib/python3.*/site-packages/numpy/*/tests
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/a4/9b/027bec52c633f6556dba6b722d9a0befb40498b9ceddd29cbe67a45a127c/numpy-1.24.4.tar.gz
-        sha256: 80f5e3a4e498641401868df4208b74581206afbee7cf7b8329daae82676d9463
+  - python3-packaging.json # required by PathWb and by meson-python bellow
+  - python3-meson-python.json
+  - python3-numpy.json
 
   - name: certifi
     buildsystem: simple
@@ -335,15 +300,6 @@ modules:
         url: https://files.pythonhosted.org/packages/b6/f0/3836719cc3982fbba3b840d18a59db1d0ee9ac7986f24e8c0a092851b67b/matplotlib-3.7.5.tar.gz
         sha256: 1e5c971558ebc811aa07f54c7b7c677d78aa518ef4c390e14673a09e0860184a
 
-  - name: six
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/6b/34/415834bfdafca3c5f451532e8a8d9ba89a21c9743a0c59fbd0205c7f9426/six-1.15.0.tar.gz
-        sha256: 30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259
-
   - name: pyparsing
     buildsystem: simple
     build-commands:
@@ -371,14 +327,7 @@ modules:
         url: https://files.pythonhosted.org/packages/ad/2e/aa84668861c3de458c5bcbfb9813f0e26434e2232d3e294469e96efac884/backports.functools_lru_cache-1.6.1.tar.gz
         sha256: 8fde5f188da2d593bd5bc0be98d9abc46c95bb8a9dde93429570192ee6cc2d4a
 
-  - name: cycler
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/c2/4b/137dea450d6e1e3d474e1d873cd1d4f7d3beed7e0dc973b06e8e10d32488/cycler-0.10.0.tar.gz
-        sha256: cd7b2d1018258d7247a71425e9f26463dfb444d411c39569972f4ce586b0c9d8
+  - python3-cycler.json
 
   - name: python-dateutil
     buildsystem: simple
@@ -409,8 +358,8 @@ modules:
       - find . -type f -name perllocal.pod -delete
     sources:
       - type: archive
-        url: https://www.kernel.org/pub/software/scm/git/git-2.28.0.tar.gz
-        sha256: f914c60a874d466c1e18467c864a910dd4ea22281ba6d4d58077cb0c3f115170
+        url: https://www.kernel.org/pub/software/scm/git/git-2.49.0.tar.gz
+        sha256: f8047f572f665bebeb637fd5f14678f31b3ca5d2ff9a18f20bd925bd48f75d3c
 
   - name: geos
     buildsystem: cmake-ninja
@@ -440,6 +389,7 @@ modules:
     buildsystem: simple
     build-options:
       cxxflags: -std=c++14
+      cflags: -Wno-error=implicit-function-declaration
       arch:
         aarch64:
           # See https://sourceforge.net/p/freeimage/bugs/325/
@@ -470,10 +420,8 @@ modules:
       - /share/doc
     sources:
       - type: archive
-        url: https://www.vtk.org/files/release/9.2/VTK-9.2.6.tar.gz
-        sha256: 06fc8d49c4e56f498c40fcb38a563ed8d4ec31358d0101e8988f0bb4d539dd12
-      - type: patch
-        path: patches/vtk-cstdint.patch
+        url: https://www.vtk.org/files/release/9.3/VTK-9.3.1.tar.gz
+        sha256: 8354ec084ea0d2dc3d23dbe4243823c4bfc270382d0ce8d658939fd50061cab8
 
   - name: rapidjson
     buildsystem: cmake-ninja
@@ -491,6 +439,8 @@ modules:
       - type: archive
         url: https://github.com/Tencent/rapidjson/archive/refs/tags/v1.1.0.tar.gz
         sha256: bf7ced29704a1e696fbccf2a2b4ea068e7774fa37f6d7dd4039d0787f8bed98e
+      - type: patch
+        path: patches/rapidjson-remove-assignment-operator.patch
 
   - name: opencascade
     buildsystem: cmake-ninja
@@ -502,13 +452,15 @@ modules:
       - -DUSE_RAPIDJSON=ON
       - -DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF
       - -DBUILD_DOC_Overview=OFF
-      - -D3RDPARTY_VTK_INCLUDE_DIR=/app/include/vtk-9.2/
+      - -D3RDPARTY_VTK_INCLUDE_DIR=/app/include/vtk-9.3/
     cleanup:
       - /bin
     sources:
       - type: git
         url: https://github.com/FreeCAD/OCCT.git
         commit: 8db1faa32e326889fc770b4389629d686ccb52d5 # tag patched/V7_8_1
+      - type: patch # upstream patch, included in occt 7.9 release
+        path: patches/occt-freetype-fix-compilation.patch
 
   # new deps for IfcOpenShell
   - name: mpfr
@@ -521,8 +473,10 @@ modules:
       - --enable-fat
     sources:
       - type: archive
-        url: https://gmplib.org/download/gmp/gmp-6.2.1.tar.bz2
+        url: https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.bz2
         sha256: eae9326beb4158c386e39a356818031bd28f3124cf915f8c5b1dc4c7a36b4d7c
+        mirror-urls:
+          - https://gmplib.org/download/gmp/gmp-6.2.1.tar.bz2 # times out on CI
   - name: cgal
     cleanup:
       - /include
@@ -544,6 +498,7 @@ modules:
         url: https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.tar.gz
         sha256: 0d8ef5af7f9794e3263480193c491549b2ba6cc74bb018906202ada498a79406
   - python3-lark.json
+  - python3-mathutils.json
 
   - name: IfcOpenShell
     buildsystem: cmake-ninja
@@ -617,8 +572,8 @@ modules:
   - name: spooles
     buildsystem: simple
     build-commands:
-      - make lib
-      - make -C MT/src
+      - make CC=gcc lib
+      - make -C MT/src CC=gcc
       - install -Dt /app/lib *.a MT/src/*.a
       - for f in $(find -name '*.h'); do install -Dt "/app/include/$(dirname "$f")" "$f"; done
     sources:
@@ -629,7 +584,7 @@ modules:
         mirror-urls:
           - http://www.netlib.org/linalg/spooles/spooles.2.2.tgz # can be slow
       - type: patch
-        path: patches/spooles-gcc.patch
+        path: patches/spooles-fix-compilation.patch
 
   - name: OpenBLAS
     buildsystem: cmake-ninja
@@ -675,17 +630,7 @@ modules:
         url: https://files.pythonhosted.org/packages/a3/58/35da89ee790598a0700ea49b2a66594140f44dec458c07e8e3d4979137fc/ply-3.11-py2.py3-none-any.whl
         sha256: 096f9b8350b65ebd2fd1346b12452efe5b9607f7482813ffca50c22722a807ce
 
-  # For Path WB
-  - name: python3-packaging
-    buildsystem: simple
-    build-commands:
-      - pip3 install --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} packaging --no-build-isolation
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/08/aa/cc0199a5f0ad350994d660967a8efb233fe0416e4639146c089643407ce6/packaging-24.1-py3-none-any.whl
-        sha256: 5b8f2217dbdbd2f7f384c41c628544e6d52f2d0f53c6d0c3ea61aa5d1d7ff124
-
-  # For the FEM workbench.
+# For the FEM workbench.
   - name: python3-pyyaml
     buildsystem: simple
     build-commands:
@@ -708,17 +653,10 @@ modules:
 
   # required by BIM wokrbench https://github.com/FreeCAD/FreeCAD/issues/17560
   - python3-requests.json
-
+  # build dependency for opencamlib
+  - python3-scikit_build_core.json
   # For add-on manager
-  - name: python3-pip
-    buildsystem: simple
-    build-commands:
-      # ignore installed because it's in the SDK
-      - pip3 install --exists-action=i --ignore-installed --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} "pip" --no-build-isolation
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/1f/2c/d9626f045e7b49a6225c6b09257861f24da78f4e5f23af2ddbdf852c99b8/pip-22.2.2-py3-none-any.whl
-        sha256: b61a374b5bc40a6e982426aede40c9b5a08ff20e640f5b56977f4f91fed1e39a
+  - python3-pip.json
 
   - name: fmt
     buildsystem: cmake-ninja
@@ -737,8 +675,6 @@ modules:
       - type: git
         url: https://github.com/jbeder/yaml-cpp
         commit: f7320141120f720aecc4c32be25586e7da9eb978 # tag 0.8.0
-
-  - python3-scikit_build_core.json
 
   - name: opencamlib
     buildsystem: simple
@@ -779,9 +715,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/FreeCAD/FreeCAD.git
-        commit: 2fcc5317fe3aee96ca73475986a577719fc78e20 # tag 1.0.0
-      - type: patch
-        path: patches/issue18435.patch
+        commit: 878f0b8c9c72c6f215833a99f2762bc3a3cf2abd # tag 1.0.1
       - type: patch
         path: patches/OpenSCAD_transfermechanism.patch
       - type: file
@@ -792,10 +726,10 @@ modules:
           # to obtain the revcount for a given gitRef (commit hash, branch or tag) run
           # echo $(($(curl -s 'https://api.github.com/repos/FreeCAD/FreeCAD/compare/120ca87015...'"$gitRef"'' | grep '"ahead_by":' | sed -s 's/ //g;s/"ahead_by"://;s/,//')+1))
           - |
-            revcount=39109
+            revcount=39285
             sed -i 's|${PACKAGE_WCREF}|'"$revcount"' (Git)|' src/Build/Version.h.cmake
             sed -i 's|${PACKAGE_WCURL}|https://github.com/FreeCAD/FreeCAD.git|' src/Build/Version.h.cmake
           - | # fix paths for flatpak environment
             sed -i 's|/usr|/app|g' cMake/FindOCC.cmake src/Gui/GraphvizView.cpp
-            sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"])' | sed 's|/usr|/app|')
-            sed -i 's|${python_libs}|'"$sitepackagesDir"'|' src/Ext/freecad/CMakeLists.txt
+            sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"].replace("/usr","/app"))')
+            sed -i "s|\${python_libs}|$sitepackagesDir|" src/Ext/freecad/CMakeLists.txt
