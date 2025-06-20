@@ -1,5 +1,4 @@
 app-id: org.freecad.FreeCAD
-app-id: org.freecad.FreeCAD
 runtime: org.kde.Platform
 runtime-version: '6.9'
 sdk: org.kde.Sdk
