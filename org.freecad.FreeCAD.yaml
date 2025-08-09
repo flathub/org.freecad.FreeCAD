@@ -2,6 +2,8 @@ app-id: org.freecad.FreeCAD
 runtime: org.kde.Platform
 runtime-version: '6.9'
 sdk: org.kde.Sdk
+base: io.qt.PySide.BaseApp
+base-version: '6.9'
 command: FreeCAD
 rename-mime-icons:
   - application-x-extension-fcstd
@@ -27,45 +29,16 @@ cleanup:
   - /share/man
   - '*.a'
   - '*.la'
+cleanup-commands:
+  - /app/cleanup-BaseApp.sh
 build-options:
   append-path: /usr/lib/sdk/llvm18/bin
   append-ld-library-path: /usr/lib/sdk/llvm18/lib
+  env:
+    - BASEAPP_REMOVE_WEBENGINE=1
 modules:
 
   - shared-modules/glu/glu-9.json
-
-  - name: pyside
-    buildsystem: cmake-ninja
-    builddir: true
-    build-options:
-      cflags: -I/usr/include/python3.12
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
-      - -DBUILD_TESTS=OFF
-      - -DCMAKE_SKIP_RPATH:BOOL=YES
-      - -DFORCE_LIMITED_API=OFF
-    cleanup:
-      - /bin
-    sources:
-      - type: archive
-        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.9.0-src/pyside-setup-everywhere-src-6.9.0.tar.xz
-        sha256: 315b73bb7570d5b9e6793a8d3fafd1d2dd7f43d35eebb01d2b554ea206aad88e
-      - type: shell
-        commands:
-          - cp -R /usr/include/Qt* sources/pyside6/PySide6/
-    modules:
-      # needed as the cmake super project doesn't find the shiboken python module
-      - name: shiboken
-        buildsystem: cmake-ninja
-        builddir: true
-        subdir: sources/shiboken6
-        config-opts:
-          - -DBUILD_TESTS=OFF
-          - -DFORCE_LIMITED_API=OFF
-        sources:
-          - type: archive
-            url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.9.0-src/pyside-setup-everywhere-src-6.9.0.tar.xz
-            sha256: 315b73bb7570d5b9e6793a8d3fafd1d2dd7f43d35eebb01d2b554ea206aad88e
 
   - name: swig
     config-opts:
@@ -171,8 +144,8 @@ modules:
       - ./b2 install -j $FLATPAK_BUILDER_N_JOBS
     sources:
       - type: archive
-        url: https://archives.boost.io/release/1.84.0/source/boost_1_84_0.tar.bz2
-        sha256: cc4b893acf645c9d4b698e9a0f08ca8846aa5d6c68275c14c3e7949c24109454
+        url: https://archives.boost.io/release/1.88.0/source/boost_1_88_0.tar.bz2
+        sha256: 46d9d2c06637b219270877c9e16155cbd015b6dc84349af064c088e9b5b12f7b
 
   - name: coin
     buildsystem: cmake-ninja
@@ -503,6 +476,7 @@ modules:
     buildsystem: cmake-ninja
     builddir: true
     subdir: cmake
+    no-parallel-make: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - -DBUILD_EXAMPLES=OFF
@@ -543,6 +517,8 @@ modules:
           # TODO: remove this patch once we update to >=0.8.1
           # see https://github.com/FreeCAD/FreeCAD/pull/17327#issuecomment-2424863106
           - patches/IfcOpenShell-fix-export.patch
+          # Boost 1.86 breakage.
+          - patches/IfcOpenShell-boost.patch
 
   - name: lapack
     buildsystem: cmake-ninja
@@ -701,8 +677,8 @@ modules:
       # While redundant (this triggers a warning with the linter) removing this
       # cause CMake to stop finding dependencies.
       - -DCMAKE_PREFIX_PATH=/app
-      - -DSHIBOKEN_INCLUDE_DIR=/app/include/shiboken6
-      - -DPYSIDE_INCLUDE_DIR=/app/include/PySide6
+      - -DSHIBOKEN_INCLUDE_DIR=/app/lib/python3.12/site-packages/shiboken6_generator/include
+      - -DPYSIDE_INCLUDE_DIR=/app/lib/python3.12/site-packages/PySide6/include
       - -DINSTALL_TO_SITEPACKAGES=ON
       - -DFREECAD_USE_PYBIND11=ON
     post-install:
@@ -711,6 +687,9 @@ modules:
       - ln -s /app/freecad/bin/FreeCADCmd /app/bin/freecadcmd
       - ln -s /app/freecad/bin/FreeCAD /app/bin/FreeCAD
       - ln -s /app/freecad/bin/FreeCAD /app/bin/freecad
+      # The BaseApp has the .so in the python path. Link them to not have to set LD_LIBRARY_PATH.
+      - ln -s /app/lib/python3.12/site-packages/shiboken6/libshiboken6.abi3.so.6.9 -t /app/lib
+      - ln -s /app/lib/python3.12/site-packages/PySide6/libpyside6.abi3.so.6.9 -t /app/lib
     sources:
       - type: git
         url: https://github.com/FreeCAD/FreeCAD.git
