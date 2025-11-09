@@ -20,7 +20,7 @@ finish-args:
   - --env=TMPDIR=/var/tmp
   - --env=SPNAV_SOCKET=/run/spnav.sock
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.llvm15
+  - org.freedesktop.Sdk.Extension.llvm18
 cleanup:
   - /include
   - /share/aclocal
@@ -30,8 +30,8 @@ cleanup:
   - '*.a'
   - '*.la'
 build-options:
-  append-path: /usr/lib/sdk/llvm15/bin
-  append-ld-library-path: /usr/lib/sdk/llvm15/lib
+  append-path: /usr/lib/sdk/llvm18/bin
+  append-ld-library-path: /usr/lib/sdk/llvm18/lib
 modules:
 
   - shared-modules/glu/glu-9.json
@@ -719,6 +719,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/FreeCAD/FreeCAD.git
+        tag: weekly-2025.11.05
         commit: af014a1bb44264d749ba9522917f0d1ac76c4bbf
       # - type: patch
       #   path: patches/OpenSCAD_transfermechanism.patch
@@ -730,7 +731,7 @@ modules:
           # to obtain the revcount for a given gitRef (commit hash, branch or tag) run
           # echo $(($(curl -s 'https://api.github.com/repos/FreeCAD/FreeCAD/compare/120ca87015...'"$gitRef"'' | grep '"ahead_by":' | sed -s 's/ //g;s/"ahead_by"://;s/,//')+1))
           - |
-            revcount=39319
+            revcount=44157
             sed -i 's|${PACKAGE_WCREF}|'"$revcount"' (Git)|' src/Build/Version.h.cmake
             sed -i 's|${PACKAGE_WCURL}|https://github.com/FreeCAD/FreeCAD.git|' src/Build/Version.h.cmake
           - | # fix paths for flatpak environment
