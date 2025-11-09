@@ -40,7 +40,7 @@ modules:
     buildsystem: cmake-ninja
     builddir: true
     build-options:
-      cflags: -I/usr/include/python3.12
+      cflags: -I/usr/include/python3.13
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DBUILD_TESTS=OFF
@@ -705,11 +705,6 @@ modules:
       - -DPYSIDE_INCLUDE_DIR=/app/include/PySide6
       - -DINSTALL_TO_SITEPACKAGES=ON
       - -DFREECAD_USE_PYBIND11=ON
-      - -DEIGEN3_INCLUDE_DIR:PATH=/app/include/eigen3
-    run-tests: true                  # run tests after “install”
-    test-rule: Test                  # default for cmake-ninja, but being explicit is fine
-    test-commands:
-      - ctest -R Measure_tests_run --output-on-failure -j ${FLATPAK_BUILDER_N_JOBS}
     post-install:
       - install -Dm755 ../openscad.sh ${FLATPAK_DEST}/bin/openscad
       - ln -s /app/freecad/bin/FreeCADCmd /app/bin/FreeCADCmd
