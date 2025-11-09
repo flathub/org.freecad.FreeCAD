@@ -20,7 +20,7 @@ finish-args:
   - --env=TMPDIR=/var/tmp
   - --env=SPNAV_SOCKET=/run/spnav.sock
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.llvm18
+  - org.freedesktop.Sdk.Extension.llvm21
 cleanup:
   - /include
   - /share/aclocal
@@ -30,8 +30,8 @@ cleanup:
   - '*.a'
   - '*.la'
 build-options:
-  append-path: /usr/lib/sdk/llvm18/bin
-  append-ld-library-path: /usr/lib/sdk/llvm18/lib
+  append-path: /usr/lib/sdk/llvm21/bin
+  append-ld-library-path: /usr/lib/sdk/llvm21/lib
 modules:
 
   - shared-modules/glu/glu-9.json
