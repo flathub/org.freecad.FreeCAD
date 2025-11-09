@@ -50,8 +50,8 @@ modules:
       - /bin
     sources:
       - type: archive
-        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.9.0-src/pyside-setup-everywhere-src-6.9.0.tar.xz
-        sha256: 315b73bb7570d5b9e6793a8d3fafd1d2dd7f43d35eebb01d2b554ea206aad88e
+        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.10.0-src/pyside-setup-everywhere-src-6.10.0.tar.xz
+        sha256: f6e18dc880f59fb6c5c37f9f408971d65642dfc7510a15d794b4a3a8e15fcecc
       - type: shell
         commands:
           - cp -R /usr/include/Qt* sources/pyside6/PySide6/
@@ -66,8 +66,8 @@ modules:
           - -DFORCE_LIMITED_API=OFF
         sources:
           - type: archive
-            url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.9.0-src/pyside-setup-everywhere-src-6.9.0.tar.xz
-            sha256: 315b73bb7570d5b9e6793a8d3fafd1d2dd7f43d35eebb01d2b554ea206aad88e
+            url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.10.0-src/pyside-setup-everywhere-src-6.10.0.tar.xz
+            sha256: f6e18dc880f59fb6c5c37f9f408971d65642dfc7510a15d794b4a3a8e15fcecc
 
   - name: swig
     config-opts:
