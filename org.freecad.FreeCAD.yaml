@@ -29,7 +29,6 @@ cleanup:
   - /share/man
   - '*.a'
   - '*.la'
-  - /app/cleanup-BaseApp.sh
 
 build-options:
   append-path: /usr/lib/sdk/llvm21/bin
@@ -52,11 +51,23 @@ modules:
       - /bin
     sources:
       - type: archive
-        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.10.0-src/pyside-setup-everywhere-src-6.10.0.tar.xz
-        sha256: f6e18dc880f59fb6c5c37f9f408971d65642dfc7510a15d794b4a3a8e15fcecc
+        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.10.1-src/pyside-setup-everywhere-src-6.10.1.tar.xz
+        sha256: fd54f40853d61dfd845dbb40d4f89fbd63df5ed341b3d9a2c77bb5c947a0a838
+        # patch from https://build.opensuse.org/package/show/KDE:Qt6/python3-pyside6
+      - type: patch
+        path: patches/0001-Always-link-to-python-libraries.patch
+      - type: patch
+        path: patches/0001-Revert-Modify-headers-installation-for-CMake-builds.patch
+      - type: patch
+        path: patches/0001-Fix-installation.patch
       - type: shell
         commands:
           - cp -R /usr/include/Qt* sources/pyside6/PySide6/
+    post-install:
+      # Manually fix path in cmake config file https://qt-project.atlassian.net/browse/PYSIDE-3210
+      # Fixes adopt from https://build.opensuse.org/projects/openSUSE:Factory/packages/python3-pyside6/files/python3-pyside6.spec
+      - sed -i 's|${PACKAGE_PREFIX_DIR}/typesystems|/app/share/PySide6/typesystems|g' /app/lib/cmake/PySide6/PySide6Config*.cmake
+      - sed -i 's|${PACKAGE_PREFIX_DIR}/glue|/app/share/PySide6/glue|g' /app/lib/cmake/PySide6/PySide6Config*.cmake
     modules:
       # needed as the cmake super project doesn't find the shiboken python module
       - name: shiboken
@@ -367,11 +378,6 @@ modules:
         - type: archive
           url: https://prdownloads.sourceforge.net/tcl/tcl8.6.15-src.tar.gz
           sha256: 861e159753f2e2fbd6ec1484103715b0be56be3357522b858d3cbb5f893ffef1
-        # x-checker-data:
-        #   type: anitya
-        #   project-id: 4941
-        #   stable-only: true
-        #   url-template: https://prdownloads.sourceforge.net/tcl/tcl$version-src.tar.gz
   - name: tk
     buildsystem: autotools
     subdir: unix
@@ -382,11 +388,6 @@ modules:
         - type: archive
           url: https://prdownloads.sourceforge.net/tcl/tk8.6.15-src.tar.gz
           sha256: 550969f35379f952b3020f3ab7b9dd5bfd11c1ef7c9b7c6a75f5c49aca793fec
-        # x-checker-data:
-        #   type: anitya
-        #   project-id: 11426
-        #   stable-only: true
-        #   url-template: https://prdownloads.sourceforge.net/tcl/tk$version-src.tar.gz
 
   - name: opencascade
     buildsystem: cmake-ninja
@@ -435,7 +436,7 @@ modules:
     builddir: true
     subdir: cmake
     config-opts:
-      # - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - -DBUILD_EXAMPLES=OFF
       - -DBUILD_GEOMSERVER=OFF
       - -DBUILD_CONVERT=OFF
@@ -443,8 +444,6 @@ modules:
       - -DCGAL_INCLUDE_DIR=/app/include
       - -DOCC_INCLUDE_DIR=/app/include/opencascade
       - -DOCC_LIBRARY_DIR=/app/lib
-      - -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu #look for gmp and mpfr that come with sdk
-      - -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu
       - -DHDF5_INCLUDE_DIR=/app/include
       - -DHDF5_LIBRARY_DIR=/app/lib
       - -DEIGEN_DIR=/app/include/eigen3
@@ -457,13 +456,13 @@ modules:
         x86_64:
           config-opts:
             - -DLIBXML2_LIBRARIES=/usr/lib/x86_64-linux-gnu/libxml2.so
-            # - -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu #look for gmp and mpfr that come with sdk
-            # - -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu
+            - -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu #look for gmp and mpfr that come with sdk
+            - -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu
         aarch64:
           config-opts:
             - -DLIBXML2_LIBRARIES=/usr/lib/aarch64-linux-gnu/libxml2.so
-            # - -DGMP_LIBRARY_DIR=/usr/lib/aarch64-linux-gnu
-            # - -DMPFR_LIBRARY_DIR=/usr/lib/aarch64-linux-gnu
+            - -DGMP_LIBRARY_DIR=/usr/lib/aarch64-linux-gnu
+            - -DMPFR_LIBRARY_DIR=/usr/lib/aarch64-linux-gnu
     build-commands:
       - sed -i 's|/usr|/app|g' ifcwrap/cmake_install.cmake
       - sed -i 's|/usr|/app|g' ifcwrap/cmake_install.cmake
@@ -498,10 +497,6 @@ modules:
       - type: archive
         url: https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.30/OpenBLAS-0.3.30.tar.gz
         sha256: 27342cff518646afb4c2b976d809102e368957974c250a25ccc965e53063c95d
-        # x-checker-data:
-        #   type: anitya
-        #   project-id: 2540
-        #   url-template: https://github.com/OpenMathLib/OpenBLAS/archive/v$version.tar.gz
 
   - name: arpack
     buildsystem: cmake-ninja
@@ -610,6 +605,7 @@ modules:
           type: git
           tag-pattern: ^v?([\d.]+)$
 
+
   - name: FreeCAD
     buildsystem: cmake-ninja
     builddir: true
@@ -638,10 +634,11 @@ modules:
     sources:
       - type: git
         url: https://github.com/FreeCAD/FreeCAD.git
-        tag: weekly-2025.11.12
-        commit: 4fbb389ce1295e04a5ad7f3a63f68b63b4f4036c
-      - type: patch
-        path: patches/OpenSCAD_transfermechanism.patch
+        tag: weekly-2025.11.26
+        commit: de230cfaa75433441366ad09a4d5fda828e7bfdb
+      # OpenSCADUtils.py have since been change and the patch is not applicable, need testing.
+      # - type: patch
+      #   path: patches/OpenSCAD_transfermechanism.patch
       - type: file
         path: openscad.sh
       - type: shell
@@ -650,7 +647,7 @@ modules:
           # to obtain the revcount for a given gitRef (commit hash, branch or tag) run
           # echo $(($(curl -s 'https://api.github.com/repos/FreeCAD/FreeCAD/compare/120ca87015...'"$gitRef"'' | grep '"ahead_by":' | sed -s 's/ //g;s/"ahead_by"://;s/,//')+1))
           - |
-            revcount=44157
+            revcount=44355
             sed -i 's|${PACKAGE_WCREF}|'"$revcount"' (Git)|' src/Build/Version.h.cmake
             sed -i 's|${PACKAGE_WCURL}|https://github.com/FreeCAD/FreeCAD.git|' src/Build/Version.h.cmake
           - | # fix paths for flatpak environment
