@@ -211,76 +211,14 @@ modules:
             sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"].replace("/usr","/app"))')
             sed -i "s|\${Python_SITEARCH}|$sitepackagesDir|" {*/,./}CMakeLists.txt
 
-  - name: Cython
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/2a/97/8cc3fe7c6de4796921236a64d00ca8a95565772e57f0d3caae68d880b592/Cython-0.29.37.tar.gz
-        sha256: f813d4a6dd94adee5d4ff266191d1d95bf6d4164a4facc535422c021b2504cfb
+    # python3 flatpak-pip-generator flit-core tomli packaging pybind11 setuptools_scm_git_archive setuptools_scm setuptools meson-python numpy contourpy cycler fonttools cppy kiwisolver pillow six pyparsing backports_functools_lru_cache python-dateutil pycollada ply requests pyyaml scikit_build_core lark pysolar pip -o python_deps
 
-  - python3-packaging.json # required by PathWb and by meson-python bellow
-  - python3-meson-python.json
-  - python3-numpy.json
-
-  - name: certifi
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/40/a7/ded59fa294b85ca206082306bba75469a38ea1c7d44ea7e1d64f5443d67a/certifi-2020.6.20.tar.gz
-        sha256: 5930595817496dd21bb8dc35dad090f1c2cd0adfaf21204bf6732ca5d8ee34d3
-
-  - name: cppy
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/36/64/be592e84c443a70ea5dcfb1c30bfe6f10ba7d8eb05c2264c7ceca8498548/cppy-1.1.0.tar.gz
-        sha256: 4eda6f1952054a270f32dc11df7c5e24b259a09fddf7bfaa5f33df9fb4a29642
-
-  - name: kiwisolver
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/62/b8/db619d97819afb52a3ff5ff6ad3f7de408cc83a8ec2dfb31a1731c0a97c2/kiwisolver-1.2.0.tar.gz
-        sha256: 247800260cd38160c362d211dcaf4ed0f7816afb5efe56544748b21d6ad6d17f
-
-  - name: pybind11
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
-    sources:
-      - type: archive
-        url: https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.tar.gz
-        sha256: e08cb87f4773da97fa7b5f035de8763abc656d87d5773e62f6da0587d1f0ec20
-      - type: shell
-        commands:
-        - python3 setup.py install --prefix=/app --root=/
-
-  - name: contourpy
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/b4/9b/6edb9d3e334a70a212f66a844188fcb57ddbd528cbc3b1fe7abfc317ddd7/contourpy-1.0.7.tar.gz
-        sha256: d8165a088d31798b59e91117d1f5fc3df8168d8b48c4acc10fc0df0d0bdbcc5e
-
-  - name: python3-Pillow
-    buildsystem: simple
-    build-commands:
-      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} "Pillow" --no-build-isolation
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/cd/74/ad3d526f3bf7b6d3f408b73fde271ec69dfac8b81341a318ce825f2b3812/pillow-10.4.0.tar.gz
-        sha256: 166c1cd4d24309b30d61f79f4a9114b7b2313d7450912277855ff5dfd7cd4a06
+    # requests required by BIM wokrbench https://github.com/FreeCAD/FreeCAD/issues/17560
+    # scikit_build_core build dependency for opencamlib
+    # pip For add-on manager
+    # pyyaml For the FEM workbench.
+    # pysolar For the BIM workbench to generate Solar diagrams. https://github.com/flathub/org.freecadweb.FreeCAD/issues/114
+  - python_deps.json
 
   - name: matplotlib
     buildsystem: simple
@@ -296,55 +234,11 @@ modules:
         url: http://www.qhull.org/download/qhull-2020-src-8.0.2.tgz
         sha256: b5c2d7eb833278881b952c8a52d20179eab87766b00b865000469a45c1838b7e
       - type: archive
-        url: https://files.pythonhosted.org/packages/b6/f0/3836719cc3982fbba3b840d18a59db1d0ee9ac7986f24e8c0a092851b67b/matplotlib-3.7.5.tar.gz
-        sha256: 1e5c971558ebc811aa07f54c7b7c677d78aa518ef4c390e14673a09e0860184a
-
-  - name: pyparsing
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/c1/47/dfc9c342c9842bbe0036c7f763d2d6686bcf5eb1808ba3e170afdb282210/pyparsing-2.4.7.tar.gz
-        sha256: c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1
-
-  - name: setuptools_scm
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/cd/66/fa77e809b7cb1c2e14b48c7fc8a8cd657a27f4f9abb848df0c967b6e4e11/setuptools_scm-4.1.2.tar.gz
-        sha256: a8994582e716ec690f33fec70cca0f85bd23ec974e3f783233e4879090a7faa8
-
-  - name: backports_functools_lru_cache
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/ad/2e/aa84668861c3de458c5bcbfb9813f0e26434e2232d3e294469e96efac884/backports.functools_lru_cache-1.6.1.tar.gz
-        sha256: 8fde5f188da2d593bd5bc0be98d9abc46c95bb8a9dde93429570192ee6cc2d4a
-
-  - python3-cycler.json
-
-  - name: python-dateutil
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/be/ed/5bbc91f03fa4c839c4c7360375da77f9659af5f7086b7a7bdda65771c8e0/python-dateutil-2.8.1.tar.gz
-        sha256: 73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c
-
-  - name: pycollada
-    buildsystem: simple
-    build-commands:
-        - python3 setup.py install --prefix=/app --root=/
-    sources:
-        - type: archive
-          url: https://files.pythonhosted.org/packages/c1/7e/91cb2540947f0e8bcdee83e61a7b278784ac2d25f2864091344590a2619f/pycollada-0.7.2.tar.gz
-          sha256: 70a2630ed499bdab718c0e61a3e6ae3698130d7e4654e89cdecde51bfdaea56f
+        url: https://files.pythonhosted.org/packages/ae/e2/d2d5295be2f44c678ebaf3544ba32d20c1f9ef08c49fe47f496180e1db15/matplotlib-3.10.7.tar.gz
+        sha256: a06ba7e2a2ef9131c79c49e63dad355d2d878413a0376c1727c8b9335ff731c7
+        x-checker-data:
+          type: pypi
+          name: matplotlib
 
   - name: git
     make-args:
@@ -496,8 +390,6 @@ modules:
       - type: archive
         url: https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.tar.gz
         sha256: 0d8ef5af7f9794e3263480193c491549b2ba6cc74bb018906202ada498a79406
-  - python3-lark.json
-  - python3-mathutils.json
 
   - name: IfcOpenShell
     buildsystem: cmake-ninja
@@ -619,43 +511,6 @@ modules:
       - type: archive
         url: https://gmsh.info/src/gmsh-4.12.2-source.tgz
         sha256: 13e09d9ca8102e5c40171d6ee150c668742b98c3a6ca57f837f7b64e1e2af48f
-
-  - name: python3-ply
-    buildsystem: simple
-    build-commands:
-      - pip3 install --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} ply==3.11 --no-build-isolation
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/a3/58/35da89ee790598a0700ea49b2a66594140f44dec458c07e8e3d4979137fc/ply-3.11-py2.py3-none-any.whl
-        sha256: 096f9b8350b65ebd2fd1346b12452efe5b9607f7482813ffca50c22722a807ce
-
-# For the FEM workbench.
-  - name: python3-pyyaml
-    buildsystem: simple
-    build-commands:
-      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} "pyyaml" --no-build-isolation
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/54/ed/79a089b6be93607fa5cdaedf301d7dfb23af5f25c398d5ead2525b063e17/pyyaml-6.0.2.tar.gz
-        sha256: d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e
-
-  # For the BIM workbench to generate Solar diagrams.
-  # https://github.com/flathub/org.freecadweb.FreeCAD/issues/114
-  - name: python3-pysolar
-    buildsystem: simple
-    build-commands:
-      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} "pysolar" --no-build-isolation
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/5e/74/c78d4ff1c8b9d1f718f57d58afa7125f1610b09005298afb1047081e952d/pysolar-0.10-py3-none-any.whl
-        sha256: 99aa506d4eba41a83308a6772779ffcafcbe8afa595e80b8eafb1ed85b561446
-
-  # required by BIM wokrbench https://github.com/FreeCAD/FreeCAD/issues/17560
-  - python3-requests.json
-  # build dependency for opencamlib
-  - python3-scikit_build_core.json
-  # For add-on manager
-  - python3-pip.json
 
   - name: fmt
     buildsystem: cmake-ninja
