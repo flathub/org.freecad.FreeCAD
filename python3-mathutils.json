@@ -1,0 +1,14 @@
+{
+    "name": "python3-mathutils",
+    "buildsystem": "simple",
+    "build-commands": [
+        "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"mathutils\" --no-build-isolation"
+    ],
+    "sources": [
+        {
+            "type": "file",
+            "url": "https://files.pythonhosted.org/packages/5f/9d/e9b156c0e28b1a3fd970930bfd8b33f6cc5ae0863405ac46557225545b76/mathutils-3.3.0.tar.gz",
+            "sha256": "b9371af8149f3f3f05ee165cb583b2df7b3fbc9935406d1c505a5276b8e563af"
+        }
+    ]
+}
