@@ -94,8 +94,8 @@ modules:
       - '*'
     sources:
       - type: archive
-        url: https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.bz2
-        sha256: 685adf14bd8e9c015b78097c1dc22f2f01343756f196acdc76a678e1ae352e11
+        url: https://gitlab.com/libeigen/eigen/-/archive/3.4.1/eigen-3.4.1.tar.bz2
+        sha256: 8bb7280b7551bf06418d11a9671fdf998cb927830cf21589b394382d26779821
 
   - name: graphviz
     sources:
@@ -716,7 +716,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/FreeCAD/FreeCAD.git
-        commit: 04d2bcbf45ab96f3895ac3d0e8b5ae9becbaf5cd
+        commit: 53767601ea65de7cd9f6590e7d5856afc0841635
+        tag: 1.1rc1
       - type: patch
         path: patches/OpenSCAD_transfermechanism.patch
       - type: file
@@ -727,7 +728,7 @@ modules:
           # to obtain the revcount for a given gitRef (commit hash, branch or tag) run
           # echo $(($(curl -s 'https://api.github.com/repos/FreeCAD/FreeCAD/compare/120ca87015...'"$gitRef"'' | grep '"ahead_by":' | sed -s 's/ //g;s/"ahead_by"://;s/,//')+1))
           - |
-            revcount=40267
+            revcount=44348
             sed -i 's|${PACKAGE_WCREF}|'"$revcount"' (Git)|' src/Build/Version.h.cmake
             sed -i 's|${PACKAGE_WCURL}|https://github.com/FreeCAD/FreeCAD.git|' src/Build/Version.h.cmake
           - | # fix paths for flatpak environment
