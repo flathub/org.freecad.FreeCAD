@@ -2,11 +2,11 @@ diff -ur CalculiX/ccx_2.22/src/Makefile_MT CalculiX_new/ccx_2.22/src/Makefile_MT
 --- CalculiX/ccx_2.22/src/Makefile_MT	2020-07-23 21:41:38.507761972 +0200
 +++ CalculiX_new/ccx_2.22/src/Makefile_MT	2020-10-12 04:00:16.010748092 +0200
 @@ -1,6 +1,6 @@
- 
+
 -CFLAGS = -Wall -O2 -fopenmp -I ../SPOOLES.2.2 -DARCH="Linux" -DSPOOLES -DARPACK -DMATRIXSTORAGE -DUSE_MT=1 
 -FFLAGS = -Wall -O2 -fopenmp 
-+CFLAGS = -Wall -O2 -fopenmp -DARCH="Linux" -DSPOOLES -DARPACK -DMATRIXSTORAGE -DUSE_MT=1
-+FFLAGS = -Wall -O2 -fopenmp -fallow-argument-mismatch
++CFLAGS = -Wall -O2 -fopenmp -Wno-error=return-mismatch -DARCH="Linux" -DSPOOLES -DARPACK -DMATRIXSTORAGE -DUSE_MT=1
++FFLAGS = -Wall -O2 -fopenmp -Wno-error=return-mismatch -fallow-argument-mismatch
  
  CC=cc
  FC=gfortran

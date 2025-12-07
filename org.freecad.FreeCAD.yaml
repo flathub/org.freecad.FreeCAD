@@ -1,14 +1,16 @@
 app-id: org.freecad.FreeCAD
+default-branch: beta
 runtime: org.kde.Platform
-runtime-version: '6.9'
+runtime-version: '6.10'
 sdk: org.kde.Sdk
 command: FreeCAD
+desktop-file-name-prefix: "(beta) "
 rename-mime-icons:
   - application-x-extension-fcstd
 finish-args:
-  - --env=QT_QPA_PLATFORM=xcb
   - --share=ipc
-  - --socket=x11
+  - --socket=wayland
+  - --socket=fallback-x11
   - --device=dri
   - --share=network
   - --filesystem=host # needed to make file saving work
@@ -18,7 +20,7 @@ finish-args:
   - --env=TMPDIR=/var/tmp
   - --env=SPNAV_SOCKET=/run/spnav.sock
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.llvm18
+  - org.freedesktop.Sdk.Extension.llvm21
 cleanup:
   - /include
   - /share/aclocal
@@ -27,9 +29,10 @@ cleanup:
   - /share/man
   - '*.a'
   - '*.la'
+
 build-options:
-  append-path: /usr/lib/sdk/llvm18/bin
-  append-ld-library-path: /usr/lib/sdk/llvm18/lib
+  append-path: /usr/lib/sdk/llvm21/bin
+  append-ld-library-path: /usr/lib/sdk/llvm21/lib
 modules:
 
   - shared-modules/glu/glu-9.json
@@ -38,7 +41,7 @@ modules:
     buildsystem: cmake-ninja
     builddir: true
     build-options:
-      cflags: -I/usr/include/python3.12
+      cflags: -I/usr/include/python3.13
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DBUILD_TESTS=OFF
@@ -48,11 +51,23 @@ modules:
       - /bin
     sources:
       - type: archive
-        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.9.0-src/pyside-setup-everywhere-src-6.9.0.tar.xz
-        sha256: 315b73bb7570d5b9e6793a8d3fafd1d2dd7f43d35eebb01d2b554ea206aad88e
+        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.10.1-src/pyside-setup-everywhere-src-6.10.1.tar.xz
+        sha256: fd54f40853d61dfd845dbb40d4f89fbd63df5ed341b3d9a2c77bb5c947a0a838
+        # patch from https://build.opensuse.org/package/show/KDE:Qt6/python3-pyside6
+      - type: patch
+        path: patches/0001-Always-link-to-python-libraries.patch
+      - type: patch
+        path: patches/0001-Revert-Modify-headers-installation-for-CMake-builds.patch
+      - type: patch
+        path: patches/0001-Fix-installation.patch
       - type: shell
         commands:
           - cp -R /usr/include/Qt* sources/pyside6/PySide6/
+    post-install:
+      # Manually fix path in cmake config file https://qt-project.atlassian.net/browse/PYSIDE-3210
+      # Fixes adopt from https://build.opensuse.org/projects/openSUSE:Factory/packages/python3-pyside6/files/python3-pyside6.spec
+      - sed -i 's|${PACKAGE_PREFIX_DIR}/typesystems|/app/share/PySide6/typesystems|g' /app/lib/cmake/PySide6/PySide6Config*.cmake
+      - sed -i 's|${PACKAGE_PREFIX_DIR}/glue|/app/share/PySide6/glue|g' /app/lib/cmake/PySide6/PySide6Config*.cmake
     modules:
       # needed as the cmake super project doesn't find the shiboken python module
       - name: shiboken
@@ -64,8 +79,8 @@ modules:
           - -DFORCE_LIMITED_API=OFF
         sources:
           - type: archive
-            url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.9.0-src/pyside-setup-everywhere-src-6.9.0.tar.xz
-            sha256: 315b73bb7570d5b9e6793a8d3fafd1d2dd7f43d35eebb01d2b554ea206aad88e
+            url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.10.0-src/pyside-setup-everywhere-src-6.10.0.tar.xz
+            sha256: f6e18dc880f59fb6c5c37f9f408971d65642dfc7510a15d794b4a3a8e15fcecc
 
   - name: swig
     config-opts:
@@ -88,21 +103,17 @@ modules:
   - name: eigen
     buildsystem: cmake-ninja
     builddir: true
-    cleanup:
-      - '*'
     sources:
       - type: archive
-        url: https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.bz2
-        sha256: 685adf14bd8e9c015b78097c1dc22f2f01343756f196acdc76a678e1ae352e11
+        url: https://gitlab.com/libeigen/eigen/-/archive/3.4.1/eigen-3.4.1.tar.bz2
+        sha256: 8bb7280b7551bf06418d11a9671fdf998cb927830cf21589b394382d26779821
 
   - name: graphviz
     sources:
-      - type: archive
-        url: https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/9.0.0/graphviz-9.0.0.tar.gz
-        sha256: 3547d90dc80f0ac4cd900ec1a824c319a479c1e8f43883451de1aff293d7a07b
-      - type: shell
-        commands:
-          - sed -i '/LIBPOSTFIX="64"/s/64//' configure.ac
+      - type: git
+        url: https://gitlab.com/graphviz/graphviz
+        tag: 14.0.2
+        commit: 8fe0778817801d0d88406c28e22c4b170cdbd517
 
   - name: xerces-c
     buildsystem: cmake-ninja
@@ -157,6 +168,21 @@ modules:
       - type: archive
         url: https://github.com/chennes/med/archive/refs/tags/v5.0.0.tar.gz
         sha256: 8701f142087b87e8b74958fd0432498eadf28011b20ad05cf56bf911be081888
+        # Patch from https://build.opensuse.org/package/show/science/med-tools
+      - type: patch
+        path: patches/fix-cmakefiles.patch
+      - type: patch
+        path: patches/0003-Avoid-format-warnings-on-64-bit.patch
+      - type: patch
+        path: patches/Fix-no_return_in_nonvoid_function.patch
+      - type: patch
+        path: patches/0001-Fix-AppendOutput-signature-for-Swig-4.3.patch
+      - type: patch
+        path: patches/med-tools-hdf1_14.patch
+      - type: patch
+        path: patches/med-tools-python3_13.patch
+      - type: patch
+        path: patches/med-tools-gcc15.patch
 
   - name: libspnav
     sources:
@@ -183,8 +209,8 @@ modules:
       - /bin
     sources:
       - type: archive
-        url: https://github.com/coin3d/coin/releases/download/v4.0.3/coin-4.0.3-src.tar.gz
-        sha256: 66e3f381401f98d789154eb00b2996984da95bc401ee69cc77d2a72ed86dfda8
+        url: https://github.com/coin3d/coin/releases/download/v4.0.6/coin-4.0.6-src.tar.gz
+        sha256: e04a600809593feb2acbec4282803d1673926ddfa1d9fcd402f35ec26fc52e7e
 
   - name: soqt
     buildsystem: cmake-ninja
@@ -195,7 +221,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/coin3d/soqt.git
-        commit: 6f844aba9801cb462080337e8bacee2b142dc1d5 # tag v1.6.3
+        tag: v1.6.4
+        commit: cfc4fee34d003aa454aa55159828081fc7cbbe38
 
   - name: pivy
     buildsystem: cmake-ninja
@@ -223,16 +250,19 @@ modules:
   - name: matplotlib
     buildsystem: simple
     build-commands:
-      - python3 setup.py install --prefix=/app --root=/
+      - mkdir -p subprojects/packagecache/
+      - cp qhull-8.0.2.tgz freetype-2.6.1.tar.gz subprojects/packagecache/ #Copy qhull and freetype to correct dir so matplotlib will not try to download it
+      - python3 -mpip install . --no-index --find-links=file://${PWD} --prefix=${FLATPAK_DEST}
+        --no-build-isolation
     sources:
-      - type: archive
-        dest: build/freetype-2.6.1
-        url: https://downloads.sourceforge.net/project/freetype/freetype2/2.6.1/freetype-2.6.1.tar.gz
+      - type: file
+        url: https://download.savannah.gnu.org/releases/freetype/freetype-old/freetype-2.6.1.tar.gz
         sha256: 0a3c7dfbda6da1e8fce29232e8e96d987ababbbf71ebc8c75659e4132c367014
-      - type: archive
-        dest: build/qhull-2020.2
-        url: http://www.qhull.org/download/qhull-2020-src-8.0.2.tgz
-        sha256: b5c2d7eb833278881b952c8a52d20179eab87766b00b865000469a45c1838b7e
+        dest-filename: freetype-2.6.1.tar.gz
+      - type: file
+        dest-filename: qhull-8.0.2.tgz
+        url: https://github.com/qhull/qhull/archive/v8.0.2/qhull-8.0.2.tar.gz
+        sha256: 8774e9a12c70b0180b95d6b0b563c5aa4bea8d5960c15e18ae3b6d2521d64f8b
       - type: archive
         url: https://files.pythonhosted.org/packages/ae/e2/d2d5295be2f44c678ebaf3544ba32d20c1f9ef08c49fe47f496180e1db15/matplotlib-3.10.7.tar.gz
         sha256: a06ba7e2a2ef9131c79c49e63dad355d2d878413a0376c1727c8b9335ff731c7
@@ -263,8 +293,8 @@ modules:
       - /bin
     sources:
       - type: archive
-        url: https://download.osgeo.org/geos/geos-3.7.0.tar.bz2
-        sha256: 4fbf41a792fd74293ab59e0a980e8654cd411a9d45416d66eaa12d53d1393fd7
+        url: https://download.osgeo.org/geos/geos-3.14.1.tar.bz2
+        sha256: 3c20919cda9a505db07b5216baa980bacdaa0702da715b43f176fb07eff7e716
 
   - name: netcdf
     buildsystem: cmake-ninja
@@ -308,13 +338,15 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+      - -DVTK_BUILD_TESTING=OFF
+      - -DVTK_MODULE_ENABLE_VTK_TestingCore=NO
     cleanup:
       - /bin
       - /share/doc
     sources:
       - type: archive
-        url: https://www.vtk.org/files/release/9.3/VTK-9.3.1.tar.gz
-        sha256: 8354ec084ea0d2dc3d23dbe4243823c4bfc270382d0ce8d658939fd50061cab8
+        url: https://vtk.org/files/release/9.5/VTK-9.5.2.tar.gz
+        sha256: cee64b98d270ff7302daf1ef13458dff5d5ac1ecb45d47723835f7f7d562c989
 
   - name: rapidjson
     buildsystem: cmake-ninja
@@ -329,11 +361,35 @@ modules:
       - /lib/pkgconfig
       - /share/doc
     sources:
-      - type: archive
-        url: https://github.com/Tencent/rapidjson/archive/refs/tags/v1.1.0.tar.gz
-        sha256: bf7ced29704a1e696fbccf2a2b4ea068e7774fa37f6d7dd4039d0787f8bed98e
-      - type: patch
-        path: patches/rapidjson-remove-assignment-operator.patch
+        # rapidjson is famously known for not tagging new release, previous tagged version was 2016.
+        # Latest tagged version does not build anymore, switch to latest commit.
+        # https://github.com/Tencent/rapidjson/issues/2321
+      - type: git
+        url: https://github.com/Tencent/rapidjson.git
+        commit: 24b5e7a8b27f42fa16b96fc70aade9106cf7102f
+
+  - name: tcl
+    buildsystem: autotools
+    subdir: unix
+    config-opts:
+        - --enable-threads
+        - --enable-shared
+    post-install:
+        - chmod 755 /app/lib/libtcl*.so
+    sources:
+        - type: archive
+          url: https://prdownloads.sourceforge.net/tcl/tcl8.6.15-src.tar.gz
+          sha256: 861e159753f2e2fbd6ec1484103715b0be56be3357522b858d3cbb5f893ffef1
+  - name: tk
+    buildsystem: autotools
+    subdir: unix
+    post-install:
+        - chmod +w ${FLATPAK_DEST}/lib/libtk*.so
+        - ln -sf /app/bin/wish8.6 /app/bin/wish
+    sources:
+        - type: archive
+          url: https://prdownloads.sourceforge.net/tcl/tk8.6.15-src.tar.gz
+          sha256: 550969f35379f952b3020f3ab7b9dd5bfd11c1ef7c9b7c6a75f5c49aca793fec
 
   - name: opencascade
     buildsystem: cmake-ninja
@@ -345,7 +401,8 @@ modules:
       - -DUSE_RAPIDJSON=ON
       - -DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF
       - -DBUILD_DOC_Overview=OFF
-      - -D3RDPARTY_VTK_INCLUDE_DIR=/app/include/vtk-9.3/
+      - -D3RDPARTY_VTK_INCLUDE_DIR=/app/include/vtk-9.5/
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     cleanup:
       - /bin
     sources:
@@ -355,21 +412,7 @@ modules:
       - type: patch # upstream patch, included in occt 7.9 release
         path: patches/occt-freetype-fix-compilation.patch
 
-  # new deps for IfcOpenShell
-  - name: mpfr
-    sources:
-      - type: archive
-        url: https://ftp.gnu.org/gnu/mpfr/mpfr-3.1.5.tar.xz
-        sha256: 015fde82b3979fbe5f83501986d328331ba8ddf008c1ff3da3c238f49ca062bc
-  - name: gmp
-    config-opts:
-      - --enable-fat
-    sources:
-      - type: archive
-        url: https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.bz2
-        sha256: eae9326beb4158c386e39a356818031bd28f3124cf915f8c5b1dc4c7a36b4d7c
-        mirror-urls:
-          - https://gmplib.org/download/gmp/gmp-6.2.1.tar.bz2 # times out on CI
+    #Update from 5.3.1 because of this issue: https://github.com/CGAL/cgal/issues/8313
   - name: cgal
     cleanup:
       - /include
@@ -378,12 +421,12 @@ modules:
       - /bin
     buildsystem: cmake-ninja
     config-opts:
-      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - -DCGAL_HEADER_ONLY=ON
     sources:
       - type: archive
-        url: https://github.com/CGAL/cgal/releases/download/v5.3.1/CGAL-5.3.1.tar.xz
-        sha256: ab76633b023d72ea3ca9ad22e2fa39ed3b5c8fb4e2c091a78035fabb5eb3fccf
+        url: https://github.com/CGAL/cgal/releases/download/v6.1/CGAL-6.1.tar.xz
+        sha256: 618da8a8b3f5be46b4f0a47a1efb3c9e6c03d6aab0f5531d56d355d32701d79f
+
   - name: nlohmann-json
     buildsystem: cmake-ninja
     sources:
@@ -404,8 +447,6 @@ modules:
       - -DCGAL_INCLUDE_DIR=/app/include
       - -DOCC_INCLUDE_DIR=/app/include/opencascade
       - -DOCC_LIBRARY_DIR=/app/lib
-      - -DGMP_LIBRARY_DIR=/app/lib
-      - -DMPFR_LIBRARY_DIR=/app/lib
       - -DHDF5_INCLUDE_DIR=/app/include
       - -DHDF5_LIBRARY_DIR=/app/lib
       - -DEIGEN_DIR=/app/include/eigen3
@@ -418,47 +459,61 @@ modules:
         x86_64:
           config-opts:
             - -DLIBXML2_LIBRARIES=/usr/lib/x86_64-linux-gnu/libxml2.so
+            - -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu #look for gmp and mpfr that come with sdk
+            - -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu
         aarch64:
           config-opts:
             - -DLIBXML2_LIBRARIES=/usr/lib/aarch64-linux-gnu/libxml2.so
+            - -DGMP_LIBRARY_DIR=/usr/lib/aarch64-linux-gnu
+            - -DMPFR_LIBRARY_DIR=/usr/lib/aarch64-linux-gnu
     build-commands:
       - sed -i 's|/usr|/app|g' ifcwrap/cmake_install.cmake
       - sed -i 's|/usr|/app|g' ifcwrap/cmake_install.cmake
     sources:
       - type: git
         url: https://github.com/IfcOpenShell/IfcOpenShell.git
-        tag: ifcopenshell-python-0.8.0
-        commit: e072870fd38139a8fb9050fc21727fad580e459c
+        tag: ifcopenshell-python-0.8.3
+        commit: 6d8e513f97bf88506f61fb8143c460a27695edb2
       - type: patch
         paths:
           - patches/IfcOpenShell-hdf5.patch
-          # TODO: remove this patch once we update to >=0.8.1
-          # see https://github.com/FreeCAD/FreeCAD/pull/17327#issuecomment-2424863106
-          - patches/IfcOpenShell-fix-export.patch
 
-  - name: lapack
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
+  - name: OpenBLAS
+    no-autogen: true
+    make-args:
+      - DYNAMIC_ARCH=1
+      - DYNAMIC_OLDER=1
+      - FC=gfortran
+      - TARGET=GENERIC
+      - USE_OPENMP=0
+    make-install-args:
+      - PREFIX=/app
+    cleanup:
+      - /bin
+      - /include
+      - /lib/cmake
+      - /lib/*.a
+      - /lib/*.la
+      - /lib/pkgconfig
+      - /share/man
     sources:
       - type: archive
-        url: https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.10.1.tar.gz
-        sha256: cd005cd021f144d7d5f7f33c943942db9f03a28d110d6a3b80d718a295f7f714
+        url: https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.30/OpenBLAS-0.3.30.tar.gz
+        sha256: 27342cff518646afb4c2b976d809102e368957974c250a25ccc965e53063c95d
 
   - name: arpack
     buildsystem: cmake-ninja
     builddir: true
     config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_SHARED_LIBS=OFF #calculix-ccx look for libarpack.a
     build-options:
       env:
         FFLAGS: -fallow-argument-mismatch
         FCFLAGS: -fallow-argument-mismatch
     sources:
       - type: archive
-        url: https://github.com/opencollab/arpack-ng/archive/refs/tags/3.7.0.tar.gz
-        sha256: 972e3fc3cd0b9d6b5a737c9bf6fd07515c0d6549319d4ffb06970e64fa3cc2d6
+        url: https://github.com/opencollab/arpack-ng/archive/refs/tags/3.9.1.tar.gz
+        sha256: f6641deb07fa69165b7815de9008af3ea47eb39b2bb97521fbf74c97aba6e844
 
   - name: spooles
     buildsystem: simple
@@ -477,16 +532,6 @@ modules:
       - type: patch
         path: patches/spooles-fix-compilation.patch
 
-  - name: OpenBLAS
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
-    sources:
-      - type: archive
-        url: https://github.com/OpenMathLib/OpenBLAS/archive/refs/tags/v0.3.28.tar.gz
-        sha256: f1003466ad074e9b0c8d421a204121100b0751c96fc6fcf3d1456bd12f8a00a1
-
   - name: calculix-ccx
     buildsystem: simple
     build-commands:
@@ -503,14 +548,12 @@ modules:
   - name: gmsh
     buildsystem: cmake-ninja
     builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
     cleanup:
       - /share/doc
     sources:
       - type: archive
-        url: https://gmsh.info/src/gmsh-4.12.2-source.tgz
-        sha256: 13e09d9ca8102e5c40171d6ee150c668742b98c3a6ca57f837f7b64e1e2af48f
+        url: https://gmsh.info/src/gmsh-4.15.0-source.tgz
+        sha256: abb2632715bd7d0130ded7144fd6263635cd7dea883b8df61ba4da58ce6a1dfe
 
   - name: fmt
     buildsystem: cmake-ninja
@@ -524,11 +567,19 @@ modules:
   - name: yaml-cpp
     buildsystem: cmake-ninja
     config-opts:
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
       - -DBUILD_SHARED_LIBS=ON
+      - -DYAML_BUILD_SHARED_LIBS=ON
+      - -DYAML_CPP_BUILD_TOOLS=OFF
+      - -DYAML_CPP_BUILD_TESTS=OFF
+      - -DYAML_CPP_BUILD_CONTRIB=OFF
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     sources:
-      - type: git
-        url: https://github.com/jbeder/yaml-cpp
-        commit: f7320141120f720aecc4c32be25586e7da9eb978 # tag 0.8.0
+      - type: archive
+        url: https://github.com/jbeder/yaml-cpp/archive/refs/tags/0.8.0.tar.gz
+        sha256: fbe74bbdcee21d656715688706da3c8becfd946d92cd44705cc6098bb23b3a16
+      - type: patch
+        path: patches/yaml-cpp-gcc15.patch
 
   - name: opencamlib
     buildsystem: simple
@@ -544,6 +595,22 @@ modules:
       - type: patch
         path: patches/opencamlib-boost-shared-no-git-version-command.patch
 
+  - name: pybind11
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DPYBIND11_INSTALL:BOOL=ON
+      - -DPYBIND11_TEST:BOOL=OFF
+      - -DPYTHON_INCLUDE_DIRS=/usr/include/python3.13
+    sources:
+      - type: git
+        url: https://github.com/pybind/pybind11
+        tag: v3.0.1
+        commit: f5fbe867d2d26e4a0a9177a51f6e568868ad3dc8
+        x-checker-data:
+          type: git
+          tag-pattern: ^v?([\d.]+)$
+
   - name: FreeCAD
     buildsystem: cmake-ninja
     builddir: true
@@ -556,8 +623,8 @@ modules:
       # While redundant (this triggers a warning with the linter) removing this
       # cause CMake to stop finding dependencies.
       - -DCMAKE_PREFIX_PATH=/app
-      - -DSHIBOKEN_INCLUDE_DIR=/app/include/shiboken6
-      - -DPYSIDE_INCLUDE_DIR=/app/include/PySide6
+      - -DSHIBOKEN_INCLUDE_DIR=/app/lib/python3.13/site-packages/shiboken6_generator/include
+      - -DPYSIDE_INCLUDE_DIR=/app/lib/python3.13/site-packages/PySide6/include
       - -DINSTALL_TO_SITEPACKAGES=ON
       - -DFREECAD_USE_PYBIND11=ON
     post-install:
@@ -566,12 +633,17 @@ modules:
       - ln -s /app/freecad/bin/FreeCADCmd /app/bin/freecadcmd
       - ln -s /app/freecad/bin/FreeCAD /app/bin/FreeCAD
       - ln -s /app/freecad/bin/FreeCAD /app/bin/freecad
+      # The BaseApp has the .so in the python path. Link them to not have to set LD_LIBRARY_PATH.
+      - ln -s /app/lib/python3.13/site-packages/shiboken6/libshiboken6.abi3.so.6.10 -t /app/lib
+      - ln -s /app/lib/python3.13/site-packages/PySide6/libpyside6.abi3.so.6.10 -t /app/lib
     sources:
       - type: git
         url: https://github.com/FreeCAD/FreeCAD.git
-        commit: 256fc7eff3379911ab5daf88e10182c509aa8052 # tag 1.0.2
-      - type: patch
-        path: patches/OpenSCAD_transfermechanism.patch
+        tag: weekly-2025.11.26
+        commit: de230cfaa75433441366ad09a4d5fda828e7bfdb
+      # OpenSCADUtils.py have since been change and the patch is not applicable, need testing.
+      # - type: patch
+      #   path: patches/OpenSCAD_transfermechanism.patch
       - type: file
         path: openscad.sh
       - type: shell
@@ -580,7 +652,7 @@ modules:
           # to obtain the revcount for a given gitRef (commit hash, branch or tag) run
           # echo $(($(curl -s 'https://api.github.com/repos/FreeCAD/FreeCAD/compare/120ca87015...'"$gitRef"'' | grep '"ahead_by":' | sed -s 's/ //g;s/"ahead_by"://;s/,//')+1))
           - |
-            revcount=39319
+            revcount=44355
             sed -i 's|${PACKAGE_WCREF}|'"$revcount"' (Git)|' src/Build/Version.h.cmake
             sed -i 's|${PACKAGE_WCURL}|https://github.com/FreeCAD/FreeCAD.git|' src/Build/Version.h.cmake
           - | # fix paths for flatpak environment
