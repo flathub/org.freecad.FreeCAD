@@ -1,0 +1,55 @@
+From 0af92d8230f9904735360ed9af6f54d9bd25e4ad Mon Sep 17 00:00:00 2001
+From: Simon Maertens <simon@slmaertens.dev>
+Date: Wed, 5 Jun 2024 13:13:38 +0200
+Subject: [PATCH] Bump minimum CMake version to 3.13
+
+---
+ CMakeLists.txt                  | 2 +-
+ INSTALL/CMakeLists.txt          | 2 +-
+ LAPACKE/mangling/CMakeLists.txt | 2 +-
+ lapack_build.cmake              | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 387e612fe9..7f6e2d804b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.2)
++cmake_minimum_required(VERSION 3.13)
+ 
+ project(LAPACK)
+ 
+diff --git a/INSTALL/CMakeLists.txt b/INSTALL/CMakeLists.txt
+index 92524ebc5a..5d34584ff1 100644
+--- a/INSTALL/CMakeLists.txt
++++ b/INSTALL/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.2)
++cmake_minimum_required(VERSION 3.13)
+ project(TIMING Fortran)
+ 
+ # Add the CMake directory for custom CMake modules
+diff --git a/LAPACKE/mangling/CMakeLists.txt b/LAPACKE/mangling/CMakeLists.txt
+index 1b6b308e07..a3e20ab79a 100644
+--- a/LAPACKE/mangling/CMakeLists.txt
++++ b/LAPACKE/mangling/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.2)
++cmake_minimum_required(VERSION 3.13)
+ project(MANGLING C Fortran)
+ 
+ add_executable(xintface Fintface.f Cintface.c)
+diff --git a/lapack_build.cmake b/lapack_build.cmake
+index 83f812460e..1460acaa28 100644
+--- a/lapack_build.cmake
++++ b/lapack_build.cmake
+@@ -4,7 +4,7 @@
+ ## HINTS: ctest -Ddashboard_model=Nightly      -S $(pwd)/lapack/lapack_build.cmake
+ ##
+ 
+-cmake_minimum_required(VERSION 3.2)
++cmake_minimum_required(VERSION 3.13)
+ ###################################################################
+ # The values in this section must always be provided
+ ###################################################################
