@@ -1,7 +1,7 @@
 app-id: org.freecad.FreeCAD
 default-branch: beta
 runtime: org.kde.Platform
-runtime-version: '6.9'
+runtime-version: '6.10'
 sdk: org.kde.Sdk
 command: FreeCAD
 desktop-file-name-prefix: "(beta) "
@@ -20,7 +20,7 @@ finish-args:
   - --env=TMPDIR=/var/tmp
   - --env=SPNAV_SOCKET=/run/spnav.sock
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.llvm18
+  - org.freedesktop.Sdk.Extension.llvm20
 cleanup:
   - /include
   - /share/aclocal
@@ -30,8 +30,8 @@ cleanup:
   - '*.a'
   - '*.la'
 build-options:
-  append-path: /usr/lib/sdk/llvm18/bin
-  append-ld-library-path: /usr/lib/sdk/llvm18/lib
+  append-path: /usr/lib/sdk/llvm20/bin
+  append-ld-library-path: /usr/lib/sdk/llvm20/lib
 modules:
 
   - shared-modules/glu/glu-9.json
@@ -40,7 +40,7 @@ modules:
     buildsystem: cmake-ninja
     builddir: true
     build-options:
-      cflags: -I/usr/include/python3.12
+      cflags: -I/usr/include/python3.13
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DBUILD_TESTS=OFF
@@ -50,11 +50,15 @@ modules:
       - /bin
     sources:
       - type: archive
-        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.9.0-src/pyside-setup-everywhere-src-6.9.0.tar.xz
-        sha256: 315b73bb7570d5b9e6793a8d3fafd1d2dd7f43d35eebb01d2b554ea206aad88e
+        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.10.1-src/pyside-setup-everywhere-src-6.10.1.tar.xz
+        sha256: fd54f40853d61dfd845dbb40d4f89fbd63df5ed341b3d9a2c77bb5c947a0a838
       - type: shell
         commands:
           - cp -R /usr/include/Qt* sources/pyside6/PySide6/
+          # Path PySide6
+    post-install:
+      - sed -i 's|${PACKAGE_PREFIX_DIR}/typesystems|/app/share/PySide6/typesystems|g' /app/lib/cmake/PySide6/PySide6Config*.cmake
+      - sed -i 's|${PACKAGE_PREFIX_DIR}/glue|/app/share/PySide6/glue|g' /app/lib/cmake/PySide6/PySide6Config*.cmake
     modules:
       # needed as the cmake super project doesn't find the shiboken python module
       - name: shiboken
@@ -66,8 +70,8 @@ modules:
           - -DFORCE_LIMITED_API=OFF
         sources:
           - type: archive
-            url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.9.0-src/pyside-setup-everywhere-src-6.9.0.tar.xz
-            sha256: 315b73bb7570d5b9e6793a8d3fafd1d2dd7f43d35eebb01d2b554ea206aad88e
+            url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.10.1-src/pyside-setup-everywhere-src-6.10.1.tar.xz
+            sha256: fd54f40853d61dfd845dbb40d4f89fbd63df5ed341b3d9a2c77bb5c947a0a838
 
   - name: swig
     config-opts:
@@ -90,6 +94,8 @@ modules:
   - name: eigen
     buildsystem: cmake-ninja
     builddir: true
+    config-opts:
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     cleanup:
       - '*'
     sources:
@@ -105,6 +111,7 @@ modules:
       - type: shell
         commands:
           - sed -i '/LIBPOSTFIX="64"/s/64//' configure.ac
+          - autoreconf -vfi
 
   - name: xerces-c
     buildsystem: cmake-ninja
@@ -150,6 +157,8 @@ modules:
   - name: med
     buildsystem: cmake-ninja
     builddir: true
+    build-options:
+      cflags: -std=gnu18
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
     cleanup:
@@ -181,6 +190,7 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     cleanup:
       - /bin
     sources:
@@ -194,15 +204,18 @@ modules:
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DSOQT_BUILD_DOCUMENTATION=OFF
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     sources:
       - type: git
         url: https://github.com/coin3d/soqt.git
+        tag: v1.6.3
         commit: 6f844aba9801cb462080337e8bacee2b142dc1d5 # tag v1.6.3
 
   - name: pivy
     buildsystem: cmake-ninja
     config-opts:
       - -DPIVY_USE_QT6=ON
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     sources:
       - type: archive
         url: https://github.com/coin3d/pivy/archive/refs/tags/0.6.10.tar.gz
@@ -219,8 +232,8 @@ modules:
       - python3 setup.py install --prefix=/app --root=/
     sources:
       - type: archive
-        url: https://files.pythonhosted.org/packages/2a/97/8cc3fe7c6de4796921236a64d00ca8a95565772e57f0d3caae68d880b592/Cython-0.29.37.tar.gz
-        sha256: f813d4a6dd94adee5d4ff266191d1d95bf6d4164a4facc535422c021b2504cfb
+        url: https://files.pythonhosted.org/packages/5a/25/886e197c97a4b8e254173002cdc141441e878ff29aaa7d9ba560cd6e4866/cython-3.0.12.tar.gz
+        sha256: b988bb297ce76c671e28c97d017b95411010f7c77fa6623dd0bb47eed1aee1bc
 
   - python3-packaging.json # required by PathWb and by meson-python bellow
   - python3-meson-python.json
@@ -277,6 +290,8 @@ modules:
 
   - name: python3-Pillow
     buildsystem: simple
+    build-options:
+      cflags: -std=gnu18
     build-commands:
       - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} "Pillow" --no-build-isolation
     sources:
@@ -367,6 +382,7 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     cleanup:
       - /bin
     sources:
@@ -423,14 +439,17 @@ modules:
       - type: archive
         url: https://www.vtk.org/files/release/9.3/VTK-9.3.1.tar.gz
         sha256: 8354ec084ea0d2dc3d23dbe4243823c4bfc270382d0ce8d658939fd50061cab8
+      - type: patch
+        path: patches/vtk-pr-11178.patch
 
   - name: rapidjson
     buildsystem: cmake-ninja
     config-opts:
-    - -DRAPIDJSON_BUILD_DOC=OFF
-    - -DRAPIDJSON_BUILD_EXAMPLES=OFF
-    - -DRAPIDJSON_BUILD_TESTS=OFF
-    - -DRAPIDJSON_BUILD_THIRDPARTY_GTEST=OFF
+      - -DRAPIDJSON_BUILD_DOC=OFF
+      - -DRAPIDJSON_BUILD_EXAMPLES=OFF
+      - -DRAPIDJSON_BUILD_TESTS=OFF
+      - -DRAPIDJSON_BUILD_THIRDPARTY_GTEST=OFF
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     cleanup:
       - /include
       - /lib/cmake
@@ -443,6 +462,39 @@ modules:
       - type: patch
         path: patches/rapidjson-remove-assignment-operator.patch
 
+  # for opencascade. It was dropped from 24.08 runtime.
+  - name: tcl
+    subdir: unix
+    build-options:
+      no-debuginfo: true
+    cleanup:
+      - /bin
+      - /man
+    post-install:
+      # Needed for graphviz
+      - ln -s tclsh8.6 /app/bin/tclsh
+      - chmod 755 /app/lib/libtcl*.so
+    sources:
+      - type: archive
+        url: https://downloads.sourceforge.net/project/tcl/Tcl/8.6.17/tcl8.6.17-src.tar.gz
+        sha256: a3903371efcce8a405c5c245d029e9f6850258a60fa3761c4d58995610949b31
+
+  - name: tk
+    subdir: unix
+    build-options:
+      no-debuginfo: true
+    make-install-args:
+      - install-private-headers
+    cleanup:
+      - /bin
+      - /man
+    post-install:
+      - chmod 755 /app/lib/libtk*.so
+    sources:
+      - type: archive
+        url: https://downloads.sourceforge.net/project/tcl/Tcl/8.6.17/tk8.6.17-src.tar.gz
+        sha256: e4982df6f969c08bf9dd858a6891059b4a3f50dc6c87c10abadbbe2fc4838946
+
   - name: opencascade
     buildsystem: cmake-ninja
     builddir: true
@@ -454,6 +506,7 @@ modules:
       - -DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF
       - -DBUILD_DOC_Overview=OFF
       - -D3RDPARTY_VTK_INCLUDE_DIR=/app/include/vtk-9.3/
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     cleanup:
       - /bin
     sources:
@@ -470,6 +523,8 @@ modules:
         url: https://ftp.gnu.org/gnu/mpfr/mpfr-3.1.5.tar.xz
         sha256: 015fde82b3979fbe5f83501986d328331ba8ddf008c1ff3da3c238f49ca062bc
   - name: gmp
+    build-options:
+      cflags: -std=gnu18
     config-opts:
       - --enable-fat
     sources:
@@ -490,8 +545,8 @@ modules:
       - -DCGAL_HEADER_ONLY=ON
     sources:
       - type: archive
-        url: https://github.com/CGAL/cgal/releases/download/v5.3.1/CGAL-5.3.1.tar.xz
-        sha256: ab76633b023d72ea3ca9ad22e2fa39ed3b5c8fb4e2c091a78035fabb5eb3fccf
+        url: https://github.com/CGAL/cgal/releases/download/v6.1/CGAL-6.1.tar.xz
+        sha256: 618da8a8b3f5be46b4f0a47a1efb3c9e6c03d6aab0f5531d56d355d32701d79f
   - name: nlohmann-json
     buildsystem: cmake-ninja
     sources:
@@ -522,8 +577,9 @@ modules:
       - -DCOLLADA_SUPPORT=OFF
       - -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2
     build-options:
+      cxxflags: -std=gnu++14
       arch:
-        # config-opts with meson doesn't do shell variable substitutions
+        # config-opts doesn't do shell variable substitutions
         # so we can't use $FLATPAK_ARCH
         x86_64:
           config-opts:
@@ -533,18 +589,14 @@ modules:
             - -DLIBXML2_LIBRARIES=/usr/lib/aarch64-linux-gnu/libxml2.so
     build-commands:
       - sed -i 's|/usr|/app|g' ifcwrap/cmake_install.cmake
-      - sed -i 's|/usr|/app|g' ifcwrap/cmake_install.cmake
     sources:
       - type: git
         url: https://github.com/IfcOpenShell/IfcOpenShell.git
-        tag: ifcopenshell-python-0.8.0
-        commit: e072870fd38139a8fb9050fc21727fad580e459c
+        tag: ifcopenshell-python-0.8.3
+        commit: 6d8e513f97bf88506f61fb8143c460a27695edb2
       - type: patch
         paths:
           - patches/IfcOpenShell-hdf5.patch
-          # TODO: remove this patch once we update to >=0.8.1
-          # see https://github.com/FreeCAD/FreeCAD/pull/17327#issuecomment-2424863106
-          - patches/IfcOpenShell-fix-export.patch
 
   - name: lapack
     buildsystem: cmake-ninja
@@ -555,12 +607,15 @@ modules:
       - type: archive
         url: https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.10.1.tar.gz
         sha256: cd005cd021f144d7d5f7f33c943942db9f03a28d110d6a3b80d718a295f7f714
+      - type: patch
+        path: patches/lapack-cmake.patch
 
   - name: arpack
     buildsystem: cmake-ninja
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     build-options:
       env:
         FFLAGS: -fallow-argument-mismatch
@@ -592,6 +647,7 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     sources:
       - type: archive
         url: https://github.com/OpenMathLib/OpenBLAS/archive/refs/tags/v0.3.28.tar.gz
@@ -619,8 +675,8 @@ modules:
       - /share/doc
     sources:
       - type: archive
-        url: https://gmsh.info/src/gmsh-4.12.2-source.tgz
-        sha256: 13e09d9ca8102e5c40171d6ee150c668742b98c3a6ca57f837f7b64e1e2af48f
+        url: https://gmsh.info/src/gmsh-4.15.0-source.tgz
+        sha256: abb2632715bd7d0130ded7144fd6263635cd7dea883b8df61ba4da58ce6a1dfe
 
   - name: python3-ply
     buildsystem: simple
@@ -670,8 +726,11 @@ modules:
 
   - name: yaml-cpp
     buildsystem: cmake-ninja
+    build-options:
+      cxxflags: -include cstdint
     config-opts:
       - -DBUILD_SHARED_LIBS=ON
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     sources:
       - type: git
         url: https://github.com/jbeder/yaml-cpp
@@ -705,8 +764,10 @@ modules:
       - -DCMAKE_PREFIX_PATH=/app
       - -DSHIBOKEN_INCLUDE_DIR=/app/include/shiboken6
       - -DPYSIDE_INCLUDE_DIR=/app/include/PySide6
+      - -DPYSIDE_TYPESYSTEMS=/app/share/PySide6/typesystem
       - -DINSTALL_TO_SITEPACKAGES=ON
       - -DFREECAD_USE_PYBIND11=ON
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     post-install:
       - install -Dm755 ../openscad.sh ${FLATPAK_DEST}/bin/openscad
       - ln -s /app/freecad/bin/FreeCADCmd /app/bin/FreeCADCmd
