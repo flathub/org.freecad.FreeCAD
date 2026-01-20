@@ -706,15 +706,6 @@ modules:
   # For add-on manager
   - python3-pip.json
 
-  - name: fmt
-    buildsystem: cmake-ninja
-    config-opts:
-      - -DBUILD_SHARED_LIBS=ON
-    sources:
-      - type: git
-        url: https://github.com/fmtlib/fmt.git
-        commit: a33701196adfad74917046096bf5a2aa0ab0bb50 # tag 9.1.0
-
   - name: yaml-cpp
     buildsystem: cmake-ninja
     build-options:
