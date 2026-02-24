@@ -639,6 +639,7 @@ modules:
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - -DDYNAMIC_ARCH=ON
     sources:
       - type: archive
         url: https://github.com/OpenMathLib/OpenBLAS/archive/refs/tags/v0.3.28.tar.gz
