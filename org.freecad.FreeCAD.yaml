@@ -174,13 +174,11 @@ modules:
         url: https://github.com/chennes/med/archive/refs/tags/v5.0.0.tar.gz
         sha256: 8701f142087b87e8b74958fd0432498eadf28011b20ad05cf56bf911be081888
       - type: patch
-        path: patches/med-py3.13.patch
-      - type: patch
-        path: patches/med-hdf5-1.14.patch
-      - type: patch
-        path: patches/med-swig-4.3.0.patch
-      - type: patch
-        path: patches/med-gcc15.patch
+        paths: 
+          - patches/med-py3.13.patch
+          - patches/med-hdf5-1.14.patch
+          - patches/med-swig-4.3.0.patch
+          - patches/med-gcc15.patch
 
   - name: libspnav
     sources:
