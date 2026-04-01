@@ -1,0 +1,41 @@
+# Generated with flatpak-pip-generator --yaml -o python3-build-dependencies meson-python scikit_build_core setuptools_scm
+build-commands: []
+buildsystem: simple
+modules:
+- name: python3-meson-python
+  buildsystem: simple
+  build-commands:
+  - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+    --prefix=${FLATPAK_DEST} "meson-python" --no-build-isolation
+  sources:
+  - type: file
+    url: https://files.pythonhosted.org/packages/16/7f/d1b0c65b267a1463d752b324f11d3470e30889daefc4b9ec83029bfa30b5/meson_python-0.19.0-py3-none-any.whl
+    sha256: 67b5906c37404396d23c195e12c8825506074460d4a2e7083266b845d14f0298
+  - type: file
+    url: https://files.pythonhosted.org/packages/1d/0b/da4851b1e2d9c40c9bd74c0abd94510a7d797da9ccde0a90e8953751ed4a/pyproject_metadata-0.11.0-py3-none-any.whl
+    sha256: 85bbecca8694e2c00f63b492c96921d6c228454057c88e7c352b2077fcaa4096
+- name: python3-scikit_build_core
+  buildsystem: simple
+  build-commands:
+  - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+    --prefix=${FLATPAK_DEST} "scikit_build_core" --no-build-isolation
+  sources:
+  - type: file
+    url: https://files.pythonhosted.org/packages/ef/3c/2c197d226f9ea224a9ab8d197933f9da0ae0aac5b6e0f884e2b8d9c8e9f7/pathspec-1.0.4-py3-none-any.whl
+    sha256: fb6ae2fd4e7c921a165808a552060e722767cfa526f99ca5156ed2ce45a5c723
+  - type: file
+    url: https://files.pythonhosted.org/packages/07/49/b2f0fbe3165d55c02e7f9eec6a10685d518af0ef6e919ff2f589c2d15c85/scikit_build_core-0.12.2-py3-none-any.whl
+    sha256: 6ea4730da400f9a998ec3287bd3ebc1d751fe45ad0a93451bead8618adbc02b1
+- name: python3-setuptools_scm
+  buildsystem: simple
+  build-commands:
+  - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+    --prefix=${FLATPAK_DEST} "setuptools_scm" --no-build-isolation
+  sources:
+  - type: file
+    url: https://files.pythonhosted.org/packages/5c/e1/342c4434df56aa537f6ce7647eefee521d96fbb828b08acd709865767652/setuptools_scm-10.0.5-py3-none-any.whl
+    sha256: f611037d8aae618221503b8fa89319f073438252ae3420e01c9ceec249131a0a
+  - type: file
+    url: https://files.pythonhosted.org/packages/e6/60/73603fbcdbe5e803855bcce4414f94eaeed449083bd8183e67161af78188/vcs_versioning-1.1.1-py3-none-any.whl
+    sha256: b541e2ba79fc6aaa3850f8a7f88af43d97c1c80649c01142ee4146eddbc599e4
+name: python3-build-dependencies
