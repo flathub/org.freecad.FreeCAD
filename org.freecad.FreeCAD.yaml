@@ -85,9 +85,8 @@ modules:
       - '*'
     sources:
       - type: archive
-        url: https://downloads.sourceforge.net/project/swig/swig/swig-4.0.2/swig-4.0.2.tar.gz
-        sha256: d53be9730d8d58a16bf0cbd1f8ac0c0c3e1090573168bfa151b01eb47fa906fc
-
+        url: http://downloads.sourceforge.net/swig/swig-4.3.1.tar.gz
+        sha256: 44fc829f70f1e17d635a2b4d69acab38896699ecc24aa023e516e0eabbec61b8
   - name: libXmu
     cleanup:
       - /share/doc
@@ -111,8 +110,8 @@ modules:
   - name: graphviz
     sources:
       - type: archive
-        url: https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/9.0.0/graphviz-9.0.0.tar.gz
-        sha256: 3547d90dc80f0ac4cd900ec1a824c319a479c1e8f43883451de1aff293d7a07b
+        url: https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/13.1.1/graphviz-13.1.1.tar.gz
+        sha256: 7d90f72e34f6a07b5f7c23a52c6a9348f67ae68883689bcbfa58e34c67baf594
       - type: shell
         commands:
           - sed -i '/LIBPOSTFIX="64"/s/64//' configure.ac
@@ -156,16 +155,17 @@ modules:
       - /cmake
     sources:
       - type: archive
-        url: https://github.com/HDFGroup/hdf5/archive/hdf5-1_12_3.tar.gz
-        sha256: 39e2e3e25f2263f2dc3370556c174952675d7ac51c4d6f7d4f5e8b3a8bd10ac6
-
+        url: https://github.com/HDFGroup/hdf5/archive/hdf5-1_14_3.tar.gz
+        sha256: df5ee33c74d5efb59738075ef96f4201588e1f1eeb233f047ac7fd1072dee1f6
   - name: med
     buildsystem: cmake-ninja
     builddir: true
     build-options:
       cflags: -std=gnu18
     config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
+      - -D MEDFILE_BUILD_PYTHON=ON
+      - -D MEDFILE_BUILD_TESTS=OFF
+      - -D MEDFILE_INSTALL_DOC=OFF
     cleanup:
       - /bin
       - /share/doc
@@ -173,6 +173,14 @@ modules:
       - type: archive
         url: https://github.com/chennes/med/archive/refs/tags/v5.0.0.tar.gz
         sha256: 8701f142087b87e8b74958fd0432498eadf28011b20ad05cf56bf911be081888
+      - type: patch
+        path: patches/med-py3.13.patch
+      - type: patch
+        path: patches/med-hdf5-1.14.patch
+      - type: patch
+        path: patches/med-swig-4.3.0.patch
+      - type: patch
+        path: patches/med-gcc15.patch
 
   - name: libspnav
     sources:
@@ -183,13 +191,12 @@ modules:
   - name: boost
     buildsystem: simple
     build-commands:
-      - ./bootstrap.sh --prefix=/app --with-libraries=filesystem,program_options,regex,system,thread,python,date_time,chrono,atomic
+      - ./bootstrap.sh --prefix=/app --with-libraries=filesystem,program_options,regex,system,thread,python,date_time,chrono,atomic,iostreams
       - ./b2 install -j $FLATPAK_BUILDER_N_JOBS
     sources:
       - type: archive
-        url: https://archives.boost.io/release/1.84.0/source/boost_1_84_0.tar.bz2
-        sha256: cc4b893acf645c9d4b698e9a0f08ca8846aa5d6c68275c14c3e7949c24109454
-
+        url: https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.bz2
+        sha256: 1bed88e40401b2cb7a1f76d4bab499e352fa4d0c5f31c0dbae64e24d34d7513b
   - name: coin
     buildsystem: cmake-ninja
     builddir: true
@@ -200,9 +207,8 @@ modules:
       - /bin
     sources:
       - type: archive
-        url: https://github.com/coin3d/coin/releases/download/v4.0.3/coin-4.0.3-src.tar.gz
-        sha256: 66e3f381401f98d789154eb00b2996984da95bc401ee69cc77d2a72ed86dfda8
-
+        url: https://github.com/coin3d/coin/releases/download/v4.0.7/coin-4.0.7-src.tar.gz
+        sha256: a01276052c31e84e4a069ee4452eab3b65a7d101a3fd7a09803be59125616270
   - name: soqt
     buildsystem: cmake-ninja
     builddir: true
@@ -213,9 +219,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/coin3d/soqt.git
-        tag: v1.6.3
-        commit: 6f844aba9801cb462080337e8bacee2b142dc1d5 # tag v1.6.3
-
+        tag: v1.6.4
+        commit: cfc4fee34d003aa454aa55159828081fc7cbbe38
   - name: pivy
     buildsystem: cmake-ninja
     config-opts:
@@ -231,46 +236,9 @@ modules:
             sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"].replace("/usr","/app"))')
             sed -i "s|\${Python_SITEARCH}|$sitepackagesDir|" {*/,./}CMakeLists.txt
 
-  - name: Cython
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/5a/25/886e197c97a4b8e254173002cdc141441e878ff29aaa7d9ba560cd6e4866/cython-3.0.12.tar.gz
-        sha256: b988bb297ce76c671e28c97d017b95411010f7c77fa6623dd0bb47eed1aee1bc
-
-  - python3-packaging.json # required by PathWb and by meson-python bellow
-  - python3-meson-python.json
-  - python3-numpy.json
-
-  - name: certifi
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/40/a7/ded59fa294b85ca206082306bba75469a38ea1c7d44ea7e1d64f5443d67a/certifi-2020.6.20.tar.gz
-        sha256: 5930595817496dd21bb8dc35dad090f1c2cd0adfaf21204bf6732ca5d8ee34d3
-
-  - name: cppy
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/36/64/be592e84c443a70ea5dcfb1c30bfe6f10ba7d8eb05c2264c7ceca8498548/cppy-1.1.0.tar.gz
-        sha256: 4eda6f1952054a270f32dc11df7c5e24b259a09fddf7bfaa5f33df9fb4a29642
-
-  - name: kiwisolver
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/62/b8/db619d97819afb52a3ff5ff6ad3f7de408cc83a8ec2dfb31a1731c0a97c2/kiwisolver-1.2.0.tar.gz
-        sha256: 247800260cd38160c362d211dcaf4ed0f7816afb5efe56544748b21d6ad6d17f
-
+  # modules required to build pybind11, opencamlib and kiwisolver
+  - python3-build-dependencies.yaml
+  # pybind from pip doesn't install cmake and include files where freecad finds them so we use cmake
   - name: pybind11
     buildsystem: cmake-ninja
     builddir: true
@@ -278,33 +246,15 @@ modules:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
     sources:
       - type: archive
-        url: https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.tar.gz
-        sha256: e08cb87f4773da97fa7b5f035de8763abc656d87d5773e62f6da0587d1f0ec20
+        url: https://github.com/pybind/pybind11/archive/refs/tags/v3.0.2.tar.gz
+        sha256: 2f20a0af0b921815e0e169ea7fec63909869323581b89d7de1553468553f6a2d
       - type: shell
         commands:
-        - python3 setup.py install --prefix=/app --root=/
-
-  - name: contourpy
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/b4/9b/6edb9d3e334a70a212f66a844188fcb57ddbd528cbc3b1fe7abfc317ddd7/contourpy-1.0.7.tar.gz
-        sha256: d8165a088d31798b59e91117d1f5fc3df8168d8b48c4acc10fc0df0d0bdbcc5e
-
-  - name: python3-Pillow
-    buildsystem: simple
-    build-options:
-      cflags: -std=gnu18
-    build-commands:
-      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} "Pillow" --no-build-isolation
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/cd/74/ad3d526f3bf7b6d3f408b73fde271ec69dfac8b81341a318ce825f2b3812/pillow-10.4.0.tar.gz
-        sha256: 166c1cd4d24309b30d61f79f4a9114b7b2313d7450912277855ff5dfd7cd4a06
-
-  - name: matplotlib
+        - pip3 install . --verbose --exists-action=i --no-index --prefix=${FLATPAK_DEST} --no-build-isolation
+  # modules used in freecad and matplotlib dependencies
+  - python3-modules.yaml
+  # matplotlib requires additional sources so we can't simply use flatpak-pip-generator for it
+  - name: python3-matplotlib
     buildsystem: simple
     build-commands:
       - python3 setup.py install --prefix=/app --root=/
@@ -320,44 +270,6 @@ modules:
       - type: archive
         url: https://files.pythonhosted.org/packages/b6/f0/3836719cc3982fbba3b840d18a59db1d0ee9ac7986f24e8c0a092851b67b/matplotlib-3.7.5.tar.gz
         sha256: 1e5c971558ebc811aa07f54c7b7c677d78aa518ef4c390e14673a09e0860184a
-
-  - name: pyparsing
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/c1/47/dfc9c342c9842bbe0036c7f763d2d6686bcf5eb1808ba3e170afdb282210/pyparsing-2.4.7.tar.gz
-        sha256: c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1
-
-  - name: setuptools_scm
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/cd/66/fa77e809b7cb1c2e14b48c7fc8a8cd657a27f4f9abb848df0c967b6e4e11/setuptools_scm-4.1.2.tar.gz
-        sha256: a8994582e716ec690f33fec70cca0f85bd23ec974e3f783233e4879090a7faa8
-
-  - python3-cycler.json
-
-  - name: python-dateutil
-    buildsystem: simple
-    build-commands:
-      - python3 setup.py install --prefix=/app --root=/
-    sources:
-      - type: archive
-        url: https://files.pythonhosted.org/packages/be/ed/5bbc91f03fa4c839c4c7360375da77f9659af5f7086b7a7bdda65771c8e0/python-dateutil-2.8.1.tar.gz
-        sha256: 73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c
-
-  - name: pycollada
-    buildsystem: simple
-    build-commands:
-        - python3 setup.py install --prefix=/app --root=/
-    sources:
-        - type: archive
-          url: https://files.pythonhosted.org/packages/c1/7e/91cb2540947f0e8bcdee83e61a7b278784ac2d25f2864091344590a2619f/pycollada-0.7.2.tar.gz
-          sha256: 70a2630ed499bdab718c0e61a3e6ae3698130d7e4654e89cdecde51bfdaea56f
 
   - name: git
     make-args:
@@ -428,15 +340,14 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+      - -DVTK_WRAP_PYTHON=on
     cleanup:
       - /bin
       - /share/doc
     sources:
       - type: archive
-        url: https://www.vtk.org/files/release/9.3/VTK-9.3.1.tar.gz
-        sha256: 8354ec084ea0d2dc3d23dbe4243823c4bfc270382d0ce8d658939fd50061cab8
-      - type: patch
-        path: patches/vtk-pr-11178.patch
+        url: https://www.vtk.org/files/release/9.4/VTK-9.4.2.tar.gz
+        sha256: 36c98e0da96bb12a30fe53708097aa9492e7b66d5c3b366e1c8dc251e2856a02
 
   - name: rapidjson
     buildsystem: cmake-ninja
@@ -501,7 +412,7 @@ modules:
       - -DUSE_RAPIDJSON=ON
       - -DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF
       - -DBUILD_DOC_Overview=OFF
-      - -D3RDPARTY_VTK_INCLUDE_DIR=/app/include/vtk-9.3/
+      - -D3RDPARTY_VTK_INCLUDE_DIR=/app/include/vtk-9.4/
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     cleanup:
       - /bin
@@ -518,17 +429,6 @@ modules:
       - type: archive
         url: https://ftp.gnu.org/gnu/mpfr/mpfr-3.1.5.tar.xz
         sha256: 015fde82b3979fbe5f83501986d328331ba8ddf008c1ff3da3c238f49ca062bc
-  - name: gmp
-    build-options:
-      cflags: -std=gnu18
-    config-opts:
-      - --enable-fat
-    sources:
-      - type: archive
-        url: https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.bz2
-        sha256: eae9326beb4158c386e39a356818031bd28f3124cf915f8c5b1dc4c7a36b4d7c
-        mirror-urls:
-          - https://gmplib.org/download/gmp/gmp-6.2.1.tar.bz2 # times out on CI
   - name: cgal
     cleanup:
       - /include
@@ -547,10 +447,8 @@ modules:
     buildsystem: cmake-ninja
     sources:
       - type: archive
-        url: https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.tar.gz
-        sha256: 0d8ef5af7f9794e3263480193c491549b2ba6cc74bb018906202ada498a79406
-  - python3-lark.json
-  - python3-mathutils.json
+        url: https://github.com/nlohmann/json/archive/refs/tags/v3.12.0.tar.gz
+        sha256: 4b92eb0c06d10683f7447ce9406cb97cd4b453be18d7279320f7b2f025c10187
 
   - name: IfcOpenShell
     buildsystem: cmake-ninja
@@ -560,40 +458,21 @@ modules:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - -DBUILD_EXAMPLES=OFF
       - -DBUILD_GEOMSERVER=OFF
-      - -DBUILD_CONVERT=OFF
+      - -DBUILD_CONVERT=ON
       - -DENABLE_BUILD_OPTIMIZATIONS=ON
-      - -DCGAL_INCLUDE_DIR=/app/include
-      - -DOCC_INCLUDE_DIR=/app/include/opencascade
-      - -DOCC_LIBRARY_DIR=/app/lib
-      - -DGMP_LIBRARY_DIR=/app/lib
-      - -DMPFR_LIBRARY_DIR=/app/lib
-      - -DHDF5_INCLUDE_DIR=/app/include
-      - -DHDF5_LIBRARY_DIR=/app/lib
-      - -DEIGEN_DIR=/app/include/eigen3
+      - -DGLTF_SUPPORT=ON
+      - -DHDF5_SUPPORT=ON
       - -DCOLLADA_SUPPORT=OFF
       - -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2
     build-options:
       cxxflags: -std=gnu++14
-      arch:
-        # config-opts doesn't do shell variable substitutions
-        # so we can't use $FLATPAK_ARCH
-        x86_64:
-          config-opts:
-            - -DLIBXML2_LIBRARIES=/usr/lib/x86_64-linux-gnu/libxml2.so
-        aarch64:
-          config-opts:
-            - -DLIBXML2_LIBRARIES=/usr/lib/aarch64-linux-gnu/libxml2.so
     build-commands:
       - sed -i 's|/usr|/app|g' ifcwrap/cmake_install.cmake
     sources:
       - type: git
         url: https://github.com/IfcOpenShell/IfcOpenShell.git
-        tag: ifcopenshell-python-0.8.3
-        commit: 6d8e513f97bf88506f61fb8143c460a27695edb2
-      - type: patch
-        paths:
-          - patches/IfcOpenShell-hdf5.patch
-
+        tag: ifcopenshell-python-0.8.4
+        commit: 158fe92644cfe2bc37be513d9838c95d9f2233cf
   - name: lapack
     buildsystem: cmake-ninja
     builddir: true
@@ -630,7 +509,7 @@ modules:
       - for f in $(find -name '*.h'); do install -Dt "/app/include/$(dirname "$f")" "$f"; done
     sources:
       - type: archive
-        url:  http://deb.debian.org/debian/pool/main/s/spooles/spooles_2.2.orig.tar.gz
+        url: http://deb.debian.org/debian/pool/main/s/spooles/spooles_2.2.orig.tar.gz
         sha256: a84559a0e987a1e423055ef4fdf3035d55b65bbe4bf915efaa1a35bef7f8c5dd
         strip-components: 0
         mirror-urls:
@@ -657,8 +536,8 @@ modules:
       - install -m0755 ccx_*/src/ccx_*_MT /app/bin/ccx
     sources:
       - type: archive
-        url: http://www.dhondt.de/ccx_2.22.src.tar.bz2
-        sha256: 3a94dcc775a31f570229734b341d6b06301ebdc759863df901c8b9bf1854c0bc
+        url: http://www.dhondt.de/ccx_2.23.src.tar.bz2
+        sha256: 9c88385c10fb04f5dc6c4e98027a51bebdd8aee3920e05190d6c1dd08357d6e7
         strip-components: 2
       - type: patch
         path: patches/calculix-cxx-paths.patch
@@ -675,54 +554,16 @@ modules:
         url: https://gmsh.info/src/gmsh-4.15.0-source.tgz
         sha256: abb2632715bd7d0130ded7144fd6263635cd7dea883b8df61ba4da58ce6a1dfe
 
-  - name: python3-ply
-    buildsystem: simple
-    build-commands:
-      - pip3 install --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} ply==3.11 --no-build-isolation
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/a3/58/35da89ee790598a0700ea49b2a66594140f44dec458c07e8e3d4979137fc/ply-3.11-py2.py3-none-any.whl
-        sha256: 096f9b8350b65ebd2fd1346b12452efe5b9607f7482813ffca50c22722a807ce
-
-# For the FEM workbench.
-  - name: python3-pyyaml
-    buildsystem: simple
-    build-commands:
-      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} "pyyaml" --no-build-isolation
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/54/ed/79a089b6be93607fa5cdaedf301d7dfb23af5f25c398d5ead2525b063e17/pyyaml-6.0.2.tar.gz
-        sha256: d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e
-
-  # For the BIM workbench to generate Solar diagrams.
-  # https://github.com/flathub/org.freecadweb.FreeCAD/issues/114
-  - name: python3-pysolar
-    buildsystem: simple
-    build-commands:
-      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} "pysolar" --no-build-isolation
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/5e/74/c78d4ff1c8b9d1f718f57d58afa7125f1610b09005298afb1047081e952d/pysolar-0.10-py3-none-any.whl
-        sha256: 99aa506d4eba41a83308a6772779ffcafcbe8afa595e80b8eafb1ed85b561446
-
-  # required by BIM wokrbench https://github.com/FreeCAD/FreeCAD/issues/17560
-  - python3-requests.json
-  # build dependency for opencamlib
-  - python3-scikit_build_core.json
-  # For add-on manager
-  - python3-pip.json
-
   - name: yaml-cpp
     buildsystem: cmake-ninja
     build-options:
       cxxflags: -include cstdint
     config-opts:
       - -DBUILD_SHARED_LIBS=ON
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     sources:
       - type: git
         url: https://github.com/jbeder/yaml-cpp
-        commit: f7320141120f720aecc4c32be25586e7da9eb978 # tag 0.8.0
+        commit: 56e3bb550c91fd7005566f19c079cb7a503223cf # tag yaml-cpp-0.9.0
 
   - name: opencamlib
     buildsystem: simple
@@ -747,15 +588,10 @@ modules:
       - -DENABLE_DEVELOPER_TESTS=OFF
       - -DCMAKE_INSTALL_PREFIX=/app/freecad
       - -DCMAKE_INSTALL_DATAROOTDIR=/app/share
+      - -DINSTALL_TO_SITEPACKAGES=ON
       # While redundant (this triggers a warning with the linter) removing this
       # cause CMake to stop finding dependencies.
       - -DCMAKE_PREFIX_PATH=/app
-      - -DSHIBOKEN_INCLUDE_DIR=/app/include/shiboken6
-      - -DPYSIDE_INCLUDE_DIR=/app/include/PySide6
-      - -DPYSIDE_TYPESYSTEMS=/app/share/PySide6/typesystem
-      - -DINSTALL_TO_SITEPACKAGES=ON
-      - -DFREECAD_USE_PYBIND11=ON
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     cleanup:
       - /freecad/include
       - /freecad/lib/cmake
