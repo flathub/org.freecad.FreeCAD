@@ -207,8 +207,8 @@ modules:
       - /bin
     sources:
       - type: archive
-        url: https://github.com/coin3d/coin/releases/download/v4.0.7/coin-4.0.7-src.tar.gz
-        sha256: a01276052c31e84e4a069ee4452eab3b65a7d101a3fd7a09803be59125616270
+        url: https://github.com/coin3d/coin/releases/download/v4.0.8/coin-4.0.8-src.tar.gz
+        sha256: aff6c7edf24cfb935edba46574ec5f83b543c47ff79e40c21fb92dc709b0f2c4
   - name: soqt
     buildsystem: cmake-ninja
     builddir: true
@@ -228,8 +228,8 @@ modules:
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     sources:
       - type: archive
-        url: https://github.com/coin3d/pivy/archive/refs/tags/0.6.10.tar.gz
-        sha256: 7b409816c9fad84cf94f93659281f9dd2501d285eb2fc609e9401a3d004ce723
+        url: https://github.com/coin3d/pivy/archive/refs/tags/0.6.11.tar.gz
+        sha256: 78f79bd7d1ce7e8140ceba4b1220136ea1f14b4403b1e463c59fa892feed961e
       - type: shell
         commands:
           - |
