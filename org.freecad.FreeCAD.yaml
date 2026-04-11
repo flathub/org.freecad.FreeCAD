@@ -159,11 +159,9 @@ modules:
       - type: archive
         url: https://github.com/HDFGroup/hdf5/archive/hdf5-1_14_3.tar.gz
         sha256: df5ee33c74d5efb59738075ef96f4201588e1f1eeb233f047ac7fd1072dee1f6
-  - name: med
+  - name: medfile
     buildsystem: cmake-ninja
     builddir: true
-    build-options:
-      cflags: -std=gnu18
     config-opts:
       - -D MEDFILE_BUILD_PYTHON=ON
       - -D MEDFILE_BUILD_TESTS=OFF
@@ -173,14 +171,8 @@ modules:
       - /share/doc
     sources:
       - type: archive
-        url: https://github.com/chennes/med/archive/refs/tags/v5.0.0.tar.gz
-        sha256: 8701f142087b87e8b74958fd0432498eadf28011b20ad05cf56bf911be081888
-      - type: patch
-        paths: 
-          - patches/med-py3.13.patch
-          - patches/med-hdf5-1.14.patch
-          - patches/med-swig-4.3.0.patch
-          - patches/med-gcc15.patch
+        url: https://github.com/chennes/med/archive/refs/tags/v6.0.1.tar.gz
+        sha256: 62f163812e4df09c23e93d42342856a6da438cbf98d9dfe0360ce7b14a92b035
 
   - name: libspnav
     sources:
