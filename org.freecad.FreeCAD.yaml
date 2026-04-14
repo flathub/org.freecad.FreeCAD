@@ -454,6 +454,24 @@ modules:
       - type: patch # upstream patch, included in occt 7.9 release
         path: patches/occt-freetype-fix-compilation.patch
 
+  - name: netgen
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DUSE_PYTHON=ON
+      - -DPREFER_SYSTEM_PYBIND11=ON
+      - -DUSE_OCC=ON
+      - -DUSE_SUPERBUILD=OFF
+      - -DUSE_NATIVE_ARCH=OFF
+      - -DUSE_GUI=OFF
+    cleanup:
+      - /lib/cmake
+      - /include
+    sources:
+      - type: archive
+        url: https://github.com/NGSolve/netgen/archive/refs/tags/v6.2.2603.tar.gz
+        sha256: 5afe58ed86c9832adf41a7b9dfdc166fed46841cab9d87ca17d22f41377007cf
+
   # new deps for IfcOpenShell
   - name: mpfr
     sources:
