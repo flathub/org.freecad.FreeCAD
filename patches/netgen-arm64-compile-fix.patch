@@ -1,0 +1,33 @@
+# From: https://github.com/looooo/netgen/commit/f8194bf67e663af0848e2c2c91cc1695270b9209
+From f8194bf67e663af0848e2c2c91cc1695270b9209 Mon Sep 17 00:00:00 2001
+From: Lorenz Lechner <email.lorenz.lechner@gmail.com>
+Date: Tue, 31 Mar 2026 06:55:54 +0200
+Subject: [PATCH] fix(arm64): NEON int64 compare types for GCC 14
+
+- Use vceqq_s64 and vreinterpretq_s64_u64 for mask64 SIMD ops
+- Fixes linux-aarch64 build (vceqq_u64 / implicit uint64x2_t conversion)
+
+Made-with: Cursor
+---
+ libsrc/core/simd_arm64.hpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libsrc/core/simd_arm64.hpp b/libsrc/core/simd_arm64.hpp
+index 82edaffe..381caec2 100644
+--- a/libsrc/core/simd_arm64.hpp
++++ b/libsrc/core/simd_arm64.hpp
+@@ -158,12 +158,12 @@ namespace ngcore
+ 
+   NETGEN_INLINE SIMD<mask64,2> operator== (SIMD<int64_t> a, SIMD<int64_t> b)
+   {
+-    return vceqq_u64(a.Data(), b.Data());
++    return vreinterpretq_s64_u64(vceqq_s64(a.Data(), b.Data()));
+   }
+   
+   NETGEN_INLINE SIMD<mask64,2> operator> (SIMD<int64_t> a, SIMD<int64_t> b)
+   {
+-    return vcgtq_s64(a.Data(), b.Data());
++    return vreinterpretq_s64_u64(vcgtq_s64(a.Data(), b.Data()));
+   }
+ 
+   
