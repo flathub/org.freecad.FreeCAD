@@ -471,6 +471,8 @@ modules:
       - type: archive
         url: https://github.com/NGSolve/netgen/archive/refs/tags/v6.2.2603.tar.gz
         sha256: 5afe58ed86c9832adf41a7b9dfdc166fed46841cab9d87ca17d22f41377007cf
+      - type: patch
+        path: patches/netgen-arm64-compile-fix.patch
 
   # new deps for IfcOpenShell
   - name: mpfr
