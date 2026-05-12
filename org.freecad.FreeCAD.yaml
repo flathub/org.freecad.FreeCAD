@@ -41,8 +41,6 @@ modules:
   - name: pyside
     buildsystem: cmake-ninja
     builddir: true
-    build-options:
-      cflags: -I/usr/include/python3.13
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DBUILD_TESTS=OFF
