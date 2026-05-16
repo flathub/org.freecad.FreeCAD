@@ -635,6 +635,20 @@ modules:
         url: https://github.com/opencv/opencv/archive/refs/tags/4.13.0.tar.gz
         sha256: 1d40ca017ea51c533cf9fd5cbde5b5fe7ae248291ddf2af99d4c17cf8e13017d
 
+  - name: fcitx5-qt
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DENABLE_QT4=Off
+      - -DENABLE_QT5=Off
+      - -DENABLE_QT6=On
+      - -DCMAKE_INSTALL_QT6PLUGINDIR=/app/lib/plugins
+    sources:
+      - type: git
+        url: https://github.com/fcitx/fcitx5-qt
+        tag: 5.1.13
+        commit: 2a86c5b7b763c661f0a0573470170c378d723af9
+
   - name: FreeCAD
     buildsystem: cmake-ninja
     builddir: true
