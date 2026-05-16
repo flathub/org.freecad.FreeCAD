@@ -41,8 +41,6 @@ modules:
   - name: pyside
     buildsystem: cmake-ninja
     builddir: true
-    build-options:
-      cflags: -I/usr/include/python3.13
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DBUILD_TESTS=OFF
@@ -159,11 +157,9 @@ modules:
       - type: archive
         url: https://github.com/HDFGroup/hdf5/archive/hdf5-1_14_3.tar.gz
         sha256: df5ee33c74d5efb59738075ef96f4201588e1f1eeb233f047ac7fd1072dee1f6
-  - name: med
+  - name: medfile
     buildsystem: cmake-ninja
     builddir: true
-    build-options:
-      cflags: -std=gnu18
     config-opts:
       - -D MEDFILE_BUILD_PYTHON=ON
       - -D MEDFILE_BUILD_TESTS=OFF
@@ -173,14 +169,8 @@ modules:
       - /share/doc
     sources:
       - type: archive
-        url: https://github.com/chennes/med/archive/refs/tags/v5.0.0.tar.gz
-        sha256: 8701f142087b87e8b74958fd0432498eadf28011b20ad05cf56bf911be081888
-      - type: patch
-        paths: 
-          - patches/med-py3.13.patch
-          - patches/med-hdf5-1.14.patch
-          - patches/med-swig-4.3.0.patch
-          - patches/med-gcc15.patch
+        url: https://github.com/chennes/med/archive/refs/tags/v6.0.1.tar.gz
+        sha256: 62f163812e4df09c23e93d42342856a6da438cbf98d9dfe0360ce7b14a92b035
 
   - name: libspnav
     sources:
@@ -339,7 +329,7 @@ modules:
     buildsystem: cmake-ninja
     builddir: true
     config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - -DVTK_WRAP_PYTHON=on
     cleanup:
       - /bin
@@ -348,6 +338,39 @@ modules:
       - type: archive
         url: https://www.vtk.org/files/release/9.4/VTK-9.4.2.tar.gz
         sha256: 36c98e0da96bb12a30fe53708097aa9492e7b66d5c3b366e1c8dc251e2856a02
+
+  - name: flann
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DBUILD_MATLAB_BINDINGS=OFF
+      - -DBUILD_PYTHON_BINDINGS=OFF
+      - -DBUILD_EXAMPLES=OFF
+      - -DBUILD_DOC=OFF
+    sources:
+      - type: archive
+        url: https://github.com/flann-lib/flann/archive/refs/tags/1.9.2.tar.gz
+        sha256: e26829bb0017f317d9cc45ab83ddcb8b16d75ada1ae07157006c1e7d601c8824
+
+  - name: pcl
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DWITH_QT=QT6
+      - -DWITH_VTK=ON
+      - -DBUILD_tools=ON
+      - -DBUILD_global_tests=OFF
+      - -DBUILD_examples=OFF
+      - -DBUILD_apps=OFF
+    cleanup:
+      - /include
+      - /lib/cmake
+      - /lib/pkgconfig
+    sources:
+      - type: archive
+        url: https://github.com/PointCloudLibrary/pcl/archive/refs/tags/pcl-1.15.1.tar.gz
+        sha256: e1d862c7b6bd27a45884a825a2e509bfcbd4561307d5bfe17ce5c8a3d94a6c29
 
   - name: rapidjson
     buildsystem: cmake-ninja
@@ -422,6 +445,26 @@ modules:
         commit: 8db1faa32e326889fc770b4389629d686ccb52d5 # tag patched/V7_8_1
       - type: patch # upstream patch, included in occt 7.9 release
         path: patches/occt-freetype-fix-compilation.patch
+
+  - name: netgen
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DUSE_PYTHON=ON
+      - -DPREFER_SYSTEM_PYBIND11=ON
+      - -DUSE_OCC=ON
+      - -DUSE_SUPERBUILD=OFF
+      - -DUSE_NATIVE_ARCH=OFF
+      - -DUSE_GUI=OFF
+    cleanup:
+      - /lib/cmake
+      - /include
+    sources:
+      - type: archive
+        url: https://github.com/NGSolve/netgen/archive/refs/tags/v6.2.2603.tar.gz
+        sha256: 5afe58ed86c9832adf41a7b9dfdc166fed46841cab9d87ca17d22f41377007cf
+      - type: patch
+        path: patches/netgen-arm64-compile-fix.patch
 
   # new deps for IfcOpenShell
   - name: mpfr
@@ -579,6 +622,33 @@ modules:
       - type: patch
         path: patches/opencamlib-boost-shared-no-git-version-command.patch
 
+  - name: opencv
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DBUILD_TESTS=OFF
+      - -DBUILD_PERF_TESTS=OFF
+      - -DBUILD_EXAMPLES=OFF
+    sources:
+      - type: archive
+        url: https://github.com/opencv/opencv/archive/refs/tags/4.13.0.tar.gz
+        sha256: 1d40ca017ea51c533cf9fd5cbde5b5fe7ae248291ddf2af99d4c17cf8e13017d
+
+  - name: fcitx5-qt
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DENABLE_QT4=Off
+      - -DENABLE_QT5=Off
+      - -DENABLE_QT6=On
+      - -DCMAKE_INSTALL_QT6PLUGINDIR=/app/lib/plugins
+    sources:
+      - type: git
+        url: https://github.com/fcitx/fcitx5-qt
+        tag: 5.1.13
+        commit: 2a86c5b7b763c661f0a0573470170c378d723af9
+
   - name: FreeCAD
     buildsystem: cmake-ninja
     builddir: true
@@ -589,6 +659,7 @@ modules:
       - -DCMAKE_INSTALL_PREFIX=/app/freecad
       - -DCMAKE_INSTALL_DATAROOTDIR=/app/share
       - -DINSTALL_TO_SITEPACKAGES=ON
+      - -DFREECAD_USE_PCL=ON
       # While redundant (this triggers a warning with the linter) removing this
       # cause CMake to stop finding dependencies.
       - -DCMAKE_PREFIX_PATH=/app
@@ -604,7 +675,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/FreeCAD/FreeCAD.git
-        commit: 0c74c91629609511251cb7cfb7f195d147aaa2b1
+        commit: 1f988b7e98e4503fb7bca4a63551c46946d16b66
       - type: patch
         path: patches/OpenSCAD_transfermechanism.patch
       - type: file
@@ -615,7 +686,7 @@ modules:
           # to obtain the revcount for a given gitRef (commit hash, branch or tag) run
           # echo $(($(curl -s 'https://api.github.com/repos/FreeCAD/FreeCAD/compare/120ca87015...'"$gitRef"'' | grep '"ahead_by":' | sed -s 's/ //g;s/"ahead_by"://;s/,//')+1))
           - |
-            revcount=46222
+            revcount=46885
             sed -i 's|${PACKAGE_WCREF}|'"$revcount"' (Git)|' src/Build/Version.h.cmake
             sed -i 's|@PACKAGE_VERSION@|@PACKAGE_VERSION@.'"$revcount"'|' src/XDGData/org.freecad.FreeCAD.metainfo.xml.in
             sed -i 's|${PACKAGE_WCURL}|https://github.com/FreeCAD/FreeCAD.git|' src/Build/Version.h.cmake
