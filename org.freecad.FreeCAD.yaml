@@ -179,6 +179,7 @@ modules:
           - patches/med-hdf5-1.14.patch
           - patches/med-swig-4.3.0.patch
           - patches/med-gcc15.patch
+          - patches/med-headergen.patch
 
   - name: libspnav
     sources:
