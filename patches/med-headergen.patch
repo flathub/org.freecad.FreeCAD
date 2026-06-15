@@ -1,0 +1,17 @@
+diff --git a/include/H5public_extract.h.in b/include/H5public_extract.h.in
+index 2449186..4446e93 100644
+--- a/include/H5public_extract.h.in
++++ b/include/H5public_extract.h.in
+@@ -24,9 +24,9 @@ extern "C" {
+ 
+ /* Extraction depuis H5public.h. */
+ 
+-@HDF5_TYPEDEF_HERR_T@
+-@HDF5_TYPEDEF_HID_T@
+-@HDF5_TYPEDEF_HSIZE_T@
++@HDF5_TYPEDEF_HERR_T@;
++@HDF5_TYPEDEF_HID_T@;
++@HDF5_TYPEDEF_HSIZE_T@;
+ 
+ #ifdef __cplusplus
+ }
