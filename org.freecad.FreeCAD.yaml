@@ -657,8 +657,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/FreeCAD/FreeCAD.git
-        commit: 6c24c1ac45f312fc6b604a076ea4cb0664d0c5ca
-        tag: 1.1.2
+        commit: 145529fe741292ff0b3977a01195bf0247425794
+        tag: 1.1.3
       - type: patch
         path: patches/OpenSCAD_transfermechanism.patch
       - type: file
@@ -669,7 +669,7 @@ modules:
           # to obtain the revcount for a given gitRef (commit hash, branch or tag) run
           # echo $(($(curl -s 'https://api.github.com/repos/FreeCAD/FreeCAD/compare/120ca87015...'"$gitRef"'' | grep '"ahead_by":' | sed -s 's/ //g;s/"ahead_by"://;s/,//')+1))
           - |
-            revcount=44984
+            revcount=44987
             sed -i 's|${PACKAGE_WCREF}|'"$revcount"' (Git)|' src/Build/Version.h.cmake
             sed -i 's|${PACKAGE_WCURL}|https://github.com/FreeCAD/FreeCAD.git|' src/Build/Version.h.cmake
           - | # fix paths for flatpak environment
