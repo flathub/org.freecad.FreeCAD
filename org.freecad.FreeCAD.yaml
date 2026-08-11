@@ -217,6 +217,15 @@ modules:
             sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"].replace("/usr","/app"))')
             sed -i "s|\${Python_SITEARCH}|$sitepackagesDir|" {*/,./}CMakeLists.txt
 
+  - name: geos
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+    sources:
+      - type: archive
+        url: https://github.com/libgeos/geos/releases/download/3.14.1/geos-3.14.1.tar.bz2
+        sha256: 3c20919cda9a505db07b5216baa980bacdaa0702da715b43f176fb07eff7e716
+
   # modules required to build pybind11, opencamlib and kiwisolver
   - python3-build-dependencies.yaml
   # pybind from pip doesn't install cmake and include files where freecad finds them so we use cmake
@@ -265,20 +274,6 @@ modules:
       - type: archive
         url: https://www.kernel.org/pub/software/scm/git/git-2.49.0.tar.gz
         sha256: f8047f572f665bebeb637fd5f14678f31b3ca5d2ff9a18f20bd925bd48f75d3c
-
-  - name: geos
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-      - -DBUILD_TESTING=ON
-    cleanup:
-      - /bin
-    sources:
-      - type: archive
-        url: https://download.osgeo.org/geos/geos-3.7.0.tar.bz2
-        sha256: 4fbf41a792fd74293ab59e0a980e8654cd411a9d45416d66eaa12d53d1393fd7
 
   - name: netcdf
     buildsystem: cmake-ninja
@@ -672,3 +667,5 @@ modules:
             sed -i 's|/usr|/app|g' cMake/FindOCC.cmake src/Gui/GraphvizView.cpp
             sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"].replace("/usr","/app"))')
             sed -i "s|\${python_libs}|$sitepackagesDir|" src/Ext/freecad/CMakeLists.txt
+
+
