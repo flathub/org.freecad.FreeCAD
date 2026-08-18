@@ -476,6 +476,8 @@ modules:
         sha256: 618da8a8b3f5be46b4f0a47a1efb3c9e6c03d6aab0f5531d56d355d32701d79f
   - name: nlohmann-json
     buildsystem: cmake-ninja
+    config-opts:
+      - -DJSON_BuildTests=OFF
     sources:
       - type: archive
         url: https://github.com/nlohmann/json/archive/refs/tags/v3.12.0.tar.gz
