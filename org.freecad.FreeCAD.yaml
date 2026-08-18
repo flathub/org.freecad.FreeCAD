@@ -181,6 +181,7 @@ modules:
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - -DZLIB_RUNTIME_LINKING=OFF
     cleanup:
       - /bin
     sources:
