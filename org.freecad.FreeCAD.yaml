@@ -136,6 +136,7 @@ modules:
       - -DHDF5_BUILD_CPP_LIB=ON
       - -DHDF5_ENABLE_PARALLEL=ON
       - -DHDF5_ENABLE_Z_LIB_SUPPORT=ON
+      - -DBUILD_TESTING=OFF
     cleanup:
       - /bin
       - /cmake
@@ -147,9 +148,11 @@ modules:
     buildsystem: cmake-ninja
     builddir: true
     config-opts:
-      - -D MEDFILE_BUILD_PYTHON=ON
-      - -D MEDFILE_BUILD_TESTS=OFF
-      - -D MEDFILE_INSTALL_DOC=OFF
+      - -DMEDFILE_BUILD_PYTHON=ON
+      - -DMEDFILE_BUILD_TESTS=OFF
+      - -DMEDFILE_INSTALL_DOC=OFF
+      # setting this to ON fails building FreeCAD.
+      - -DMEDFILE_USE_MPI=OFF
     cleanup:
       - /bin
       - /share/doc
@@ -182,6 +185,7 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
       - -DZLIB_RUNTIME_LINKING=OFF
+      - -DCOIN_BUILD_TESTS=OFF
     cleanup:
       - /bin
     sources:
@@ -270,6 +274,7 @@ modules:
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - -DBUILD_TESTING=ON
     cleanup:
       - /bin
     sources:
@@ -282,6 +287,8 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+      - -DNETCDF_ENABLE_EXAMPLES=OFF
+      - -DBUILD_TESTING=OFF
     cleanup:
       - /bin
     sources:
@@ -320,6 +327,7 @@ modules:
     config-opts:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - -DVTK_WRAP_PYTHON=on
+      - -DVTK_BUILD_TESTING=OFF
     cleanup:
       - /bin
       - /share/doc
@@ -336,6 +344,7 @@ modules:
       - -DBUILD_MATLAB_BINDINGS=OFF
       - -DBUILD_PYTHON_BINDINGS=OFF
       - -DBUILD_EXAMPLES=OFF
+      - -DBUILD_TESTS=OFF
       - -DBUILD_DOC=OFF
     sources:
       - type: archive
@@ -445,6 +454,8 @@ modules:
       - -DUSE_SUPERBUILD=OFF
       - -DUSE_NATIVE_ARCH=OFF
       - -DUSE_GUI=OFF
+      - -DENABLE_UNIT_TESTS=OFF
+      - -DUSE_CCACHE=ON
     cleanup:
       - /lib/cmake
       - /include
@@ -512,6 +523,8 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_TESTING=OFF
+      - -DLAPACK_TESTING_USE_PYTHON=OFF
     sources:
       - type: archive
         url: https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.10.1.tar.gz
@@ -524,6 +537,7 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+      - -DTESTS=OFF
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     build-options:
       env:
@@ -581,6 +595,7 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DENABLE_TESTS=OFF
     cleanup:
       - /share/doc
     sources:
@@ -594,6 +609,7 @@ modules:
       cxxflags: -include cstdint
     config-opts:
       - -DBUILD_SHARED_LIBS=ON
+      - -DYAML_CPP_BUILD_TOOLS=OFF
     sources:
       - type: git
         url: https://github.com/jbeder/yaml-cpp
@@ -605,7 +621,7 @@ modules:
       - pip3 install --exists-action=i --ignore-installed --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} . --no-build-isolation
     build-options:
       env:
-        - CMAKE_ARGS: "${CMAKE_ARGS} -D BUILD_DOC:BOOL=OFF -D VERSION_STRING:STRING=2023.01.11"
+        - CMAKE_ARGS: "${CMAKE_ARGS} -DBUILD_DOC:BOOL=OFF -DVERSION_STRING:STRING=2023.01.11"
     sources:
       - type: archive
         url: https://github.com/aewallin/opencamlib/archive/2023.01.11/opencamlib-2023.01.11.tar.gz
