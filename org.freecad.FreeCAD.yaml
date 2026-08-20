@@ -310,31 +310,6 @@ modules:
         url: https://downloads.unidata.ucar.edu/netcdf-c/4.10.1/netcdf-c-4.10.1.tar.gz
         sha256: db3b69ff4a5ee1a7d79a5c36664d2128b752c266e966369fcf7311ec5f927564
 
-  - name: freeimage
-    buildsystem: simple
-    build-options:
-      cxxflags: -std=c++14
-      cflags: -Wno-error=implicit-function-declaration
-      arch:
-        aarch64:
-          # See https://sourceforge.net/p/freeimage/bugs/325/
-          cflags: -fPIC -DPNG_ARM_NEON_OPT=0
-          cxxflags: -fPIC
-    build-commands:
-      - sh gensrclist.sh
-      - sh genfipsrclist.sh
-      - make -f Makefile.gnu -j $FLATPAK_BUILDER_N_JOBS
-      - make -f Makefile.fip -j $FLATPAK_BUILDER_N_JOBS
-      - make -f Makefile.gnu INCDIR=/app/include INSTALLDIR=/app/lib install
-      - make -f Makefile.fip INCDIR=/app/include INSTALLDIR=/app/lib install
-    sources:
-      - type: archive
-        url: https://downloads.sourceforge.net/project/freeimage/Source%20Distribution/3.18.0/FreeImage3180.zip
-        sha256: f41379682f9ada94ea7b34fe86bf9ee00935a3147be41b6569c9605a53e438fd
-      - type: shell
-        commands:
-          - sed -i 's/-o root -g root //g' Makefile.{gnu,fip}
-
   - name: VTK
     buildsystem: cmake-ninja
     builddir: true
@@ -393,26 +368,6 @@ modules:
       - type: patch
         path: patches/pcl-fix-link.patch
 
-  - name: rapidjson
-    buildsystem: cmake-ninja
-    config-opts:
-      - -DRAPIDJSON_BUILD_DOC=OFF
-      - -DRAPIDJSON_BUILD_EXAMPLES=OFF
-      - -DRAPIDJSON_BUILD_TESTS=OFF
-      - -DRAPIDJSON_BUILD_THIRDPARTY_GTEST=OFF
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-    cleanup:
-      - /include
-      - /lib/cmake
-      - /lib/pkgconfig
-      - /share/doc
-    sources:
-      - type: archive
-        url: https://github.com/Tencent/rapidjson/archive/refs/tags/v1.1.0.tar.gz
-        sha256: bf7ced29704a1e696fbccf2a2b4ea068e7774fa37f6d7dd4039d0787f8bed98e
-      - type: patch
-        path: patches/rapidjson-remove-assignment-operator.patch
-
   # for opencascade. It was dropped from 24.08 runtime.
   - name: tcl
     subdir: unix
@@ -430,31 +385,13 @@ modules:
         url: https://downloads.sourceforge.net/project/tcl/Tcl/8.6.17/tcl8.6.17-src.tar.gz
         sha256: a3903371efcce8a405c5c245d029e9f6850258a60fa3761c4d58995610949b31
 
-  - name: tk
-    subdir: unix
-    build-options:
-      no-debuginfo: true
-    make-install-args:
-      - install-private-headers
-    cleanup:
-      - /bin
-      - /man
-    post-install:
-      - chmod 755 /app/lib/libtk*.so
-    sources:
-      - type: archive
-        url: https://downloads.sourceforge.net/project/tcl/Tcl/8.6.17/tk8.6.17-src.tar.gz
-        sha256: e4982df6f969c08bf9dd858a6891059b4a3f50dc6c87c10abadbbe2fc4838946
-
   - name: opencascade
     buildsystem: cmake-ninja
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - -DUSE_VTK=ON
-      - -DUSE_RAPIDJSON=ON
-      - -DBUILD_DOC_Overview=OFF
-      - -DUSE_FREEIMAGE=ON
+      - -DUSE_TK=OFF
     cleanup:
       - /bin
       - /share/opencascade
