@@ -109,13 +109,23 @@ modules:
       - type: patch
         path: patches/xerces-c-cxx17.patch
 
+  # openmpi installs libevent, hwloc, pmix and prte
   - name: openmpi
+    config-opts:
+      - --enable-builtin-atomics
     cleanup:
       - /bin
+      - /etc
+      - /share/applications
+      - /share/doc
+      - /share/hwloc
+      - /share/openmpi
+      - /share/pmix
+      - /share/prte
     sources:
       - type: archive
-        url: https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.5.tar.bz2
-        sha256: 6588d57c0a4bd299a24103f4e196051b29e8b55fbda49e11d5b3d32030a32776
+        url: https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.10.tar.bz2
+        sha256: 0acecc4fc218e5debdbcb8a41d182c6b0f1d29393015ed763b2a91d5d7374cc6
 
   - name: hdf5
     buildsystem: cmake-ninja
