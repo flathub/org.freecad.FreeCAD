@@ -86,14 +86,13 @@ modules:
         sha256: 8bb7280b7551bf06418d11a9671fdf998cb927830cf21589b394382d26779821
 
   - name: graphviz
+    cleanup:
+      - /share/doc
+      - /share/graphviz
     sources:
       - type: archive
-        url: https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/13.1.1/graphviz-13.1.1.tar.gz
-        sha256: 7d90f72e34f6a07b5f7c23a52c6a9348f67ae68883689bcbfa58e34c67baf594
-      - type: shell
-        commands:
-          - sed -i '/LIBPOSTFIX="64"/s/64//' configure.ac
-          - autoreconf -vfi
+        url: https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/15.1.1/graphviz-15.1.1.tar.xz
+        sha256: afc7c28dd43d3639910f58820bdce7d89655aa9ac0a4961ac67ffcf77e6a9ac3
 
   - name: xerces-c
     buildsystem: cmake-ninja
