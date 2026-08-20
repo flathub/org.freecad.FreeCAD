@@ -404,10 +404,13 @@ modules:
 
   # new deps for IfcOpenShell
   - name: mpfr
+    cleanup:
+      - /share/doc
     sources:
       - type: archive
-        url: https://ftp.gnu.org/gnu/mpfr/mpfr-3.1.5.tar.xz
-        sha256: 015fde82b3979fbe5f83501986d328331ba8ddf008c1ff3da3c238f49ca062bc
+        url: https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.xz
+        sha256: b67ba0383ef7e8a8563734e2e889ef5ec3c3b898a01d00fa0a6869ad81c6ce01
+
   - name: cgal
     cleanup:
       - /include
