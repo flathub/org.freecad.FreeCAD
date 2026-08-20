@@ -14,12 +14,10 @@ finish-args:
   - --filesystem=xdg-run/gvfs # make GnomeVFS accessible
   - --filesystem=/run/spnav.sock:ro # allow access to spacenavd
   - --talk-name=org.freedesktop.Flatpak # to launch openscad
-  # Currently PySide is installed that way.
-  - --env=LD_LIBRARY_PATH=/app/lib/python3.13/site-packages/shiboken6/:/app/lib/python3.13/site-packages/PySide6/
   - --env=TMPDIR=/var/tmp
   - --env=SPNAV_SOCKET=/run/spnav.sock
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.llvm21
+  - org.freedesktop.Sdk.Extension.llvm22
 cleanup:
   - /include
   - /share/aclocal
@@ -31,35 +29,38 @@ cleanup:
   - '*.a'
   - '*.la'
 build-options:
-  append-path: /usr/lib/sdk/llvm21/bin
-  append-ld-library-path: /usr/lib/sdk/llvm21/lib
+  append-path: /usr/lib/sdk/llvm22/bin
+  append-ld-library-path: /usr/lib/sdk/llvm22/lib
 modules:
 
   - shared-modules/glu/glu-9.json
 
   - name: pyside
-    buildsystem: simple
+    builddir: true
+    buildsystem: cmake-ninja
     build-options:
-      cflags: -I/usr/include/python3.13
+      env:
+        # $FLATPAK_BUILDER_BUILDDIR doesn't work
+        - PYTHONPATH=/run/build/pyside/_flatpak_build/sources
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DBUILD_TESTS=OFF
+      - -DFORCE_LIMITED_API=no
+      - -DNO_QT_TOOLS=yes
+      - -DSHIBOKEN_PYTHON_LIBRARIES=-lpython3.13
+      - -DSHIBOKEN_FORCE_PROCESS_SYSTEM_INCLUDE_PATHS=/usr/include
     cleanup:
       - /bin
       - /lib/plugins/designer
-      - /PySide6
+      - /share/PySide6
     sources:
       - type: archive
         url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.11.1-src/pyside-setup-everywhere-src-6.11.1.tar.xz
         sha256: 6ffd9835bb0dd2c56f061d62f1616bb1707cfc0202b80e3165d6be087f3965e2
-      - type: shell
-        commands:
-          - cp -R /usr/include/Qt* sources/pyside6/PySide6/
-          # Path PySide6
-    build-commands:
-      - python setup.py build --qtpaths=/usr/bin/qtpaths --flatpak
-      - python3 create_wheels.py --build-dir ./build/qfp-*-release
-      - rm -fr ./dist/pyside6*examples*.whl
-      - pip install ./dist/*.whl --prefix=${FLATPAK_DEST}
-    modules:
-      - python3-patchelf.json
+      - type: patch
+        path: patches/pyside-fix-header-installation-path.patch
+      - type: patch
+        path: patches/pyside-fix-header-packaging.patch
 
   - name: swig
     config-opts:
