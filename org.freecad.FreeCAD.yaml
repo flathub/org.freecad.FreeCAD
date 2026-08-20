@@ -360,6 +360,7 @@ modules:
       - -DBUILD_EXAMPLES=OFF
       - -DBUILD_TESTS=OFF
       - -DBUILD_DOC=OFF
+      - -DBUILD_TESTS=OFF
     sources:
       - type: archive
         url: https://github.com/flann-lib/flann/archive/refs/tags/1.9.2.tar.gz
