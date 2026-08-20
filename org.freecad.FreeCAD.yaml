@@ -486,6 +486,7 @@ modules:
   - name: spooles
     buildsystem: simple
     build-commands:
+      - cp -r spooles_fix/I2Ohash ./
       - make CC=gcc lib
       - make -C MT/src CC=gcc
       - install -Dt /app/lib *.a MT/src/*.a
@@ -497,6 +498,11 @@ modules:
         strip-components: 0
         mirror-urls:
           - http://www.netlib.org/linalg/spooles/spooles.2.2.tgz # can be slow
+      - type: archive
+        url: https://www.dhondt.de/ccx_2.23.SPOOLEScorrection.tar.bz2
+        sha256: 15528f09312dc7605c0600358f5e6de12945449f249dfcfca7417eed6c220b93
+        strip-components: 4
+        dest: spooles_fix
       - type: patch
         path: patches/spooles-fix-compilation.patch
 
@@ -519,12 +525,13 @@ modules:
     config-opts:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - -DENABLE_TESTS=OFF
+      - -DOpenGL_GL_PREFERENCE=GLVND
     cleanup:
       - /share/doc
     sources:
       - type: archive
-        url: https://gmsh.info/src/gmsh-4.15.0-source.tgz
-        sha256: abb2632715bd7d0130ded7144fd6263635cd7dea883b8df61ba4da58ce6a1dfe
+        url: https://gmsh.info/src/gmsh-4.15.2-source.tgz
+        sha256: be3f66f225d27ba9fa014f07e83169285da8a051b0e8ab7103d88066b39bdd3e
 
   - name: yaml-cpp
     buildsystem: cmake-ninja
