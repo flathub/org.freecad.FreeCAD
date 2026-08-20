@@ -1,0 +1,24 @@
+diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
+index 917e66d19..9609f0a46 100644
+--- a/cmake/CMakeLists.txt
++++ b/cmake/CMakeLists.txt
+@@ -310,7 +310,6 @@ else()
+     # @todo review this, shouldn't this be all possible header-only now?
+     # ... or rewritten using C++17 features?
+     set(BOOST_COMPONENTS
+-        system
+         program_options
+         regex
+         thread
+diff --git a/cmake/IfcOpenShellConfig.cmake.in b/cmake/IfcOpenShellConfig.cmake.in
+index e5e5d350b..311bcc0e3 100644
+--- a/cmake/IfcOpenShellConfig.cmake.in
++++ b/cmake/IfcOpenShellConfig.cmake.in
+@@ -14,7 +14,6 @@ set(Boost_USE_STATIC_LIBS ON)
+ set(Boost_USE_STATIC_RUNTIME OFF)
+ set(Boost_USE_MULTITHREADED ON)
+ set(Boost_COMPONENTS
+-    system
+     program_options
+     regex
+     thread

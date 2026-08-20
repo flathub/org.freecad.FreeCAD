@@ -437,23 +437,22 @@ modules:
     subdir: cmake
     config-opts:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
-      - -DBUILD_EXAMPLES=OFF
-      - -DBUILD_GEOMSERVER=OFF
-      - -DBUILD_CONVERT=ON
       - -DENABLE_BUILD_OPTIMIZATIONS=ON
+      - -DBUILD_GEOMSERVER=OFF
       - -DGLTF_SUPPORT=ON
       - -DHDF5_SUPPORT=ON
       - -DCOLLADA_SUPPORT=OFF
       - -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2
-    build-options:
-      cxxflags: -std=gnu++14
     build-commands:
       - sed -i 's|/usr|/app|g' ifcwrap/cmake_install.cmake
     sources:
       - type: git
         url: https://github.com/IfcOpenShell/IfcOpenShell.git
-        tag: ifcopenshell-python-0.8.4
-        commit: 158fe92644cfe2bc37be513d9838c95d9f2233cf
+        commit: 16723d11cab9bc8a13b4e025a00d39445ccc462e
+        tag: ifcopenshell-python-0.8.5
+      - type: patch
+        path: patches/ifc-boost-system.patch
+
   - name: lapack
     buildsystem: cmake-ninja
     builddir: true
