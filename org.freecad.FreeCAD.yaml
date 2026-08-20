@@ -35,6 +35,18 @@ modules:
 
   - shared-modules/glu/glu-9.json
 
+  - name: OpenBLAS
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DDYNAMIC_ARCH=ON
+      - -DBUILD_TESTING=OFF
+    sources:
+      - type: archive
+        url: https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.34/OpenBLAS-0.3.34.tar.gz
+        sha256: cd7e129868320cc2d033afa920e31202dfe0b8066a5b66661900ccc0f197dfed
+
   # modules required to build pyside, pybind11, opencamlib, kiwisolver
   - python3-build-dependencies.yaml
 
@@ -341,6 +353,17 @@ modules:
         url: https://github.com/flann-lib/flann/archive/refs/tags/1.9.2.tar.gz
         sha256: e26829bb0017f317d9cc45ab83ddcb8b16d75ada1ae07157006c1e7d601c8824
 
+  - name: libpcap
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    cleanup:
+      - /bin
+    sources:
+      - type: archive
+        url: https://github.com/the-tcpdump-group/libpcap/archive/refs/tags/libpcap-1.10.6.tar.gz
+        sha256: fcaeefbbca8d99249c8f271f3218f77cdbfd7718cc141f5edd16e90575e6bbed
+
   - name: pcl
     buildsystem: cmake-ninja
     config-opts:
@@ -452,20 +475,6 @@ modules:
         tag: ifcopenshell-python-0.8.5
       - type: patch
         path: patches/ifc-boost-system.patch
-
-  - name: OpenBLAS
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
-      - -DBUILD_TESTING=OFF
-      - -DLAPACK_TESTING_USE_PYTHON=OFF
-      - -DDYNAMIC_ARCH=ON
-      - -DBUILD_TESTING=OFF
-    sources:
-      - type: archive
-        url: https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.34/OpenBLAS-0.3.34.tar.gz
-        sha256: cd7e129868320cc2d033afa920e31202dfe0b8066a5b66661900ccc0f197dfed
 
   - name: arpack
     buildsystem: cmake-ninja
