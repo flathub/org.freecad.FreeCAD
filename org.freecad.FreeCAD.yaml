@@ -231,6 +231,8 @@ modules:
     buildsystem: cmake-ninja
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+    cleanup:
+      - /bin
     sources:
       - type: archive
         url: https://github.com/libgeos/geos/releases/download/3.14.1/geos-3.14.1.tar.bz2
