@@ -569,6 +569,16 @@ modules:
         commands:
           - sed -i 's/cmake.verbose/build.verbose/' pyproject.toml
 
+  - name: elmerfem
+    buildsystem: cmake-ninja
+    builddir: true
+    cleanup:
+      - /share/elmersolver
+    sources:
+      - type: archive
+        url: https://github.com/ElmerCSC/elmerfem/releases/download/release-26.2.1/elmerfem-release-26.2.1.tar.gz
+        sha256: 729809851d07b0ee8d7aff636bc21745d65b35c94d90027f39958fb759ec1d31
+
   - name: FreeCAD
     buildsystem: cmake-ninja
     builddir: true
