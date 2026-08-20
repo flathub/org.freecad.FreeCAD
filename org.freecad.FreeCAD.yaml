@@ -119,22 +119,20 @@ modules:
 
   - name: hdf5
     buildsystem: cmake-ninja
+    subdir: hdf5-2.2.0
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
-      - -DALLOW_UNSUPPORTED=ON
-      - -DHDF5_BUILD_HL_LIB=ON
       - -DHDF5_BUILD_CPP_LIB=ON
-      - -DHDF5_ENABLE_PARALLEL=ON
-      - -DHDF5_ENABLE_Z_LIB_SUPPORT=ON
-      - -DBUILD_TESTING=OFF
+      - -DHDF5_ENABLE_ZLIB_SUPPORT=ON
     cleanup:
       - /bin
-      - /cmake
+      - /share/doc
     sources:
       - type: archive
-        url: https://github.com/HDFGroup/hdf5/archive/hdf5-1_14_3.tar.gz
-        sha256: df5ee33c74d5efb59738075ef96f4201588e1f1eeb233f047ac7fd1072dee1f6
+        url: https://github.com/HDFGroup/hdf5/releases/download/2.2.0/hdf5-2.2.0.tar.gz
+        sha256: 1a1ab8209b35586fbc1aa279ba76d102130b95badcb20ca329587219112d8c16
+
   - name: med
     buildsystem: cmake-ninja
     builddir: true
