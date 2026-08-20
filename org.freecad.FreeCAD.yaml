@@ -413,18 +413,15 @@ modules:
 
   - name: cgal
     cleanup:
-      - /include
-      - /lib/cmake
-      - /share/man
-      - /bin
+      - '*'
     buildsystem: cmake-ninja
     config-opts:
-      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - -DCGAL_HEADER_ONLY=ON
     sources:
       - type: archive
-        url: https://github.com/CGAL/cgal/releases/download/v6.1/CGAL-6.1.tar.xz
-        sha256: 618da8a8b3f5be46b4f0a47a1efb3c9e6c03d6aab0f5531d56d355d32701d79f
+        url: https://github.com/CGAL/cgal/releases/download/v6.1.2/CGAL-6.1.2.tar.xz
+        sha256: 40411b97c5c64ddc1af1d153d57a39e424d21e947eef2b194fa05c5a8b002eea
+
   - name: nlohmann-json
     buildsystem: cmake-ninja
     config-opts:
