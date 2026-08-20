@@ -250,11 +250,12 @@ modules:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
     sources:
       - type: archive
-        url: https://github.com/pybind/pybind11/archive/refs/tags/v3.0.2.tar.gz
-        sha256: 2f20a0af0b921815e0e169ea7fec63909869323581b89d7de1553468553f6a2d
+        url: https://github.com/pybind/pybind11/archive/refs/tags/v3.1.0.tar.gz
+        sha256: ef712655692a2e9bf7bb7874c022564a45f91d847ddee987e720cd9e28849665
       - type: shell
         commands:
         - pip3 install . --verbose --exists-action=i --no-index --prefix=${FLATPAK_DEST} --no-build-isolation
+
   # modules used in freecad and matplotlib dependencies
   - python3-modules.yaml
   # matplotlib requires additional sources so we can't simply use flatpak-pip-generator for it
