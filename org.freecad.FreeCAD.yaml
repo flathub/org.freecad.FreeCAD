@@ -76,7 +76,8 @@ modules:
     buildsystem: cmake-ninja
     builddir: true
     config-opts:
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - -DEIGEN_BUILD_BLAS=OFF
+      - -DEIGEN_BUILD_LAPACK=OFF
     cleanup:
       - '*'
     sources:
