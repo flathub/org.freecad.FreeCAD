@@ -35,6 +35,9 @@ modules:
 
   - shared-modules/glu/glu-9.json
 
+  # modules required to build pyside, pybind11, opencamlib, kiwisolver
+  - python3-build-dependencies.yaml
+
   - name: pyside
     builddir: true
     buildsystem: cmake-ninja
@@ -48,6 +51,7 @@ modules:
       - -DFORCE_LIMITED_API=no
       - -DNO_QT_TOOLS=yes
       - -DSHIBOKEN_PYTHON_LIBRARIES=-lpython3.13
+      - -DNUMPY_INCLUDE_DIR=/app/lib/python3.13/site-packages/numpy/_core/include
       - -DSHIBOKEN_FORCE_PROCESS_SYSTEM_INCLUDE_PATHS=/usr/include
     cleanup:
       - /bin
@@ -238,8 +242,6 @@ modules:
         url: https://github.com/libgeos/geos/releases/download/3.14.1/geos-3.14.1.tar.bz2
         sha256: 3c20919cda9a505db07b5216baa980bacdaa0702da715b43f176fb07eff7e716
 
-  # modules required to build pybind11, opencamlib and kiwisolver
-  - python3-build-dependencies.yaml
   # pybind from pip doesn't install cmake and include files where freecad finds them so we use cmake
   - name: pybind11
     buildsystem: cmake-ninja
@@ -633,6 +635,9 @@ modules:
         sha256: 07fd9b61c39c4d600e441d67edbafc1015e9e3fabd88b561a647f98fedf31d41
       - type: patch
         path: patches/opencamlib-boost-shared-no-git-version-command.patch
+      - type: shell
+        commands:
+          - sed -i 's/cmake.verbose/build.verbose/' pyproject.toml
 
   - name: FreeCAD
     buildsystem: cmake-ninja
