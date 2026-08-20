@@ -586,8 +586,10 @@ modules:
       - -DFC_FLATPAK=ON
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - -DENABLE_DEVELOPER_TESTS=OFF
-      - -DCMAKE_INSTALL_PREFIX=/app/freecad
+      - -DCMAKE_INSTALL_DATADIR=/app/share/freecad
       - -DCMAKE_INSTALL_DATAROOTDIR=/app/share
+      - -DCMAKE_INSTALL_DOCDIR=/app/share/doc/freecad/
+      - -DCMAKE_INSTALL_PREFIX=/app/freecad
       - -DINSTALL_TO_SITEPACKAGES=ON
       - -DFREECAD_USE_PCL=ON
       # While redundant (this triggers a warning with the linter) removing this
