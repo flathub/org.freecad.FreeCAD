@@ -1,4 +1,4 @@
-# Generated with flatpak-pip-generator --ignore-installed pip --yaml pip cppy numpy contourpy cycler fonttools kiwisolver pillow pyparsing python_dateutil six pycollada mathutils lark typing_extensions ply pyyaml requests defusedxml pysolar shapely
+# Generated with flatpak-pip-generator --ignore-installed pip --yaml pip cppy contourpy cycler fonttools kiwisolver pillow pyparsing python_dateutil six pycollada mathutils lark typing_extensions ply pyyaml requests defusedxml pysolar shapely
 name: python3-modules
 buildsystem: simple
 build-commands: []
@@ -21,16 +21,6 @@ modules:
       - type: file
         url: https://files.pythonhosted.org/packages/8b/3c/823fda3f226d84f983e48005527a6dd2dc365220ac4f098b770779d9f4a1/cppy-1.3.1-py3-none-any.whl
         sha256: 7ca132b6ef6187384738804bd3a453d4eab7e3274df6dcd35e5d92aae3404717
-  - name: python3-numpy
-    buildsystem: simple
-    build-commands:
-      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
-        --prefix=${FLATPAK_DEST} "numpy" --no-build-isolation
-    sources:
-      - &id001
-        type: file
-        url: https://files.pythonhosted.org/packages/9a/80/db0b4559e57ec36362bedbb05530a87fafbcb6067708c946967a41d449e7/numpy-2.5.2.tar.gz
-        sha256: d482d171c406ae88c5b19cad3b6a1c4c5209f886ab74bc44c2c865c23f52d860
   - name: python3-contourpy
     buildsystem: simple
     build-commands:
@@ -40,7 +30,10 @@ modules:
       - type: file
         url: https://files.pythonhosted.org/packages/58/01/1253e6698a07380cd31a736d248a3f2a50a7c88779a1813da27503cadc2a/contourpy-1.3.3.tar.gz
         sha256: 083e12155b210502d0bca491432bb04d56dc3432f95a979b429f2848c3dbe880
-      - *id001
+      - &id002
+        type: file
+        url: https://files.pythonhosted.org/packages/9a/80/db0b4559e57ec36362bedbb05530a87fafbcb6067708c946967a41d449e7/numpy-2.5.2.tar.gz
+        sha256: d482d171c406ae88c5b19cad3b6a1c4c5209f886ab74bc44c2c865c23f52d860
   - name: python3-cycler
     buildsystem: simple
     build-commands:
@@ -96,7 +89,7 @@ modules:
         type: file
         url: https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
         sha256: a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427
-      - &id002
+      - &id001
         type: file
         url: https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl
         sha256: 4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274
@@ -106,19 +99,19 @@ modules:
       - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
         --prefix=${FLATPAK_DEST} "six" --no-build-isolation
     sources:
-      - *id002
+      - *id001
   - name: python3-pycollada
     buildsystem: simple
     build-commands:
       - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
         --prefix=${FLATPAK_DEST} "pycollada" --no-build-isolation
     sources:
-      - *id001
+      - *id002
       - type: file
         url: https://files.pythonhosted.org/packages/07/86/f1f61b7a0701f9d1299e5293d083318019f91021a4d449f94d59dbe024e4/pycollada-0.9.3-py3-none-any.whl
         sha256: 636e6496f60987586db82455ea7bbd9ade775e8181c6590c83b698b6cd53a9f5
       - *id003
-      - *id002
+      - *id001
   - name: python3-mathutils
     buildsystem: simple
     build-commands:
@@ -174,8 +167,8 @@ modules:
         url: https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl
         sha256: 62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775
       - type: file
-        url: https://files.pythonhosted.org/packages/98/2b/f97f1c193fb855c345d678f5077d6926034db0722df74c8f057020e05a25/charset_normalizer-3.4.9-py3-none-any.whl
-        sha256: 68e5f26a1ad57ded6d1cfb85331d1c1a195314756471d97758c48498bb4dcdf5
+        url: https://files.pythonhosted.org/packages/22/c7/754d09943a616937df61e4ba367c409ded2a987e872972098d51a6fcf73b/charset_normalizer-3.5.0-py3-none-any.whl
+        sha256: 993dfcbe75a85a3784abb5084f2c41b915767c90546fcc92803cffa28611baea
       - type: file
         url: https://files.pythonhosted.org/packages/1e/5e/d4e9f1a599fb8e573b7b87160658329fbf28d19eac2718f51fc3def3aa5a/idna-3.18-py3-none-any.whl
         sha256: 7f952cbe720b688055e3f87de14f5c3e5fdaa8bc3928985c4077ca689de849a2
@@ -200,7 +193,7 @@ modules:
       - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
         --prefix=${FLATPAK_DEST} "pysolar" --no-build-isolation
     sources:
-      - *id001
+      - *id002
       - type: file
         url: https://files.pythonhosted.org/packages/71/d4/d9440ff5da6547ac2587f93a9af7e779be0aed78e1f0734dede94e440f6b/pysolar-0.13-py3-none-any.whl
         sha256: 9019323af1a4db0b1cd5df5570b34a22b290f5ee817497aacfd63475779da004
@@ -210,7 +203,7 @@ modules:
       - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
         --prefix=${FLATPAK_DEST} "shapely" --no-build-isolation
     sources:
-      - *id001
+      - *id002
       - type: file
         url: https://files.pythonhosted.org/packages/4d/bc/0989043118a27cccb4e906a46b7565ce36ca7b57f5a18b78f4f1b0f72d9d/shapely-2.1.2.tar.gz
         sha256: 2ed4ecb28320a433db18a5bf029986aa8afcfd740745e78847e330d5d94922a9

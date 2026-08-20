@@ -258,6 +258,7 @@ modules:
 
   # modules used in freecad and matplotlib dependencies
   - python3-modules.yaml
+
   # matplotlib requires additional sources so we can't simply use flatpak-pip-generator for it
   - name: python3-matplotlib
     buildsystem: simple
