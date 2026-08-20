@@ -200,18 +200,18 @@ modules:
         url: https://github.com/coin3d/coin/releases/download/v4.0.10/coin-4.0.10-src.zip
         sha256: 9acf49fa2d4a2ed0fe45a03aeafd3d190fcdd3a79cc58ee1efc150e314fd5a5d
 
-  - name: soqt
+  - name: quarter
     buildsystem: cmake-ninja
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
-      - -DSOQT_BUILD_DOCUMENTATION=OFF
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - -DQUARTER_BUILD_PLUGIN=OFF
+      - -DQUARTER_BUILD_EXAMPLES=OFF
     sources:
-      - type: git
-        url: https://github.com/coin3d/soqt.git
-        tag: v1.6.4
-        commit: cfc4fee34d003aa454aa55159828081fc7cbbe38
+      - type: archive
+        url: https://github.com/coin3d/quarter/releases/download/v1.2.3/quarter-1.2.3-src.tar.gz
+        sha256: 18d9c11c738bd85db782036cfdc7117691928ab62697249621dcd5716acdb1ab
+
   - name: pivy
     buildsystem: cmake-ninja
     config-opts:
