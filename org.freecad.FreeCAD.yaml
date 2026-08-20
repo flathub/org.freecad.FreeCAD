@@ -21,7 +21,9 @@ sdk-extensions:
 cleanup:
   - /include
   - /share/aclocal
+  - /share/bash-completion/
   - /share/cmake
+  - /share/info
   - /share/pkgconfig
   - /lib/cmake
   - /lib/pkgconfig
