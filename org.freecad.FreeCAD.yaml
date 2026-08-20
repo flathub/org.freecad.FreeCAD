@@ -197,8 +197,9 @@ modules:
       - /bin
     sources:
       - type: archive
-        url: https://github.com/coin3d/coin/releases/download/v4.0.8/coin-4.0.8-src.tar.gz
-        sha256: aff6c7edf24cfb935edba46574ec5f83b543c47ff79e40c21fb92dc709b0f2c4
+        url: https://github.com/coin3d/coin/releases/download/v4.0.10/coin-4.0.10-src.zip
+        sha256: 9acf49fa2d4a2ed0fe45a03aeafd3d190fcdd3a79cc58ee1efc150e314fd5a5d
+
   - name: soqt
     buildsystem: cmake-ninja
     builddir: true
@@ -661,6 +662,8 @@ modules:
         tag: 1.1.3
       - type: patch
         path: patches/OpenSCAD_transfermechanism.patch
+      - type: patch
+        path: patches/FC-fix-coin.patch
       - type: file
         path: openscad.sh
       - type: shell
