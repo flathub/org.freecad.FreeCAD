@@ -591,6 +591,7 @@ modules:
       - -DCMAKE_INSTALL_DOCDIR=/app/share/doc/freecad/
       - -DCMAKE_INSTALL_PREFIX=/app/freecad
       - -DINSTALL_TO_SITEPACKAGES=ON
+      - -DFREECAD_USE_EXTERNAL_PIVY=ON
       - -DFREECAD_USE_PCL=ON
       # While redundant (this triggers a warning with the linter) removing this
       # cause CMake to stop finding dependencies.
