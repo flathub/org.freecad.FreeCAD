@@ -535,15 +535,13 @@ modules:
 
   - name: yaml-cpp
     buildsystem: cmake-ninja
-    build-options:
-      cxxflags: -include cstdint
     config-opts:
       - -DBUILD_SHARED_LIBS=ON
       - -DYAML_CPP_BUILD_TOOLS=OFF
     sources:
-      - type: git
-        url: https://github.com/jbeder/yaml-cpp
-        commit: 56e3bb550c91fd7005566f19c079cb7a503223cf # tag yaml-cpp-0.9.0
+      - type: archive
+        url: https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.9.0.tar.gz
+        sha256: 25cb043240f828a8c51beb830569634bc7ac603978e0f69d6b63558dadefd49a
 
   - name: opencamlib
     buildsystem: simple
