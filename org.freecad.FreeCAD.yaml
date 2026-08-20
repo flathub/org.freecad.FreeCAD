@@ -453,19 +453,19 @@ modules:
       - type: patch
         path: patches/ifc-boost-system.patch
 
-  - name: lapack
+  - name: OpenBLAS
     buildsystem: cmake-ninja
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DBUILD_TESTING=OFF
       - -DLAPACK_TESTING_USE_PYTHON=OFF
+      - -DDYNAMIC_ARCH=ON
+      - -DBUILD_TESTING=OFF
     sources:
       - type: archive
-        url: https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.10.1.tar.gz
-        sha256: cd005cd021f144d7d5f7f33c943942db9f03a28d110d6a3b80d718a295f7f714
-      - type: patch
-        path: patches/lapack-cmake.patch
+        url: https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.34/OpenBLAS-0.3.34.tar.gz
+        sha256: cd7e129868320cc2d033afa920e31202dfe0b8066a5b66661900ccc0f197dfed
 
   - name: arpack
     buildsystem: cmake-ninja
@@ -499,18 +499,6 @@ modules:
           - http://www.netlib.org/linalg/spooles/spooles.2.2.tgz # can be slow
       - type: patch
         path: patches/spooles-fix-compilation.patch
-
-  - name: OpenBLAS
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-      - -DDYNAMIC_ARCH=ON
-    sources:
-      - type: archive
-        url: https://github.com/OpenMathLib/OpenBLAS/archive/refs/tags/v0.3.28.tar.gz
-        sha256: f1003466ad074e9b0c8d421a204121100b0751c96fc6fcf3d1456bd12f8a00a1
 
   - name: calculix-ccx
     buildsystem: simple
