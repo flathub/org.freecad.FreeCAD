@@ -451,21 +451,18 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
-      - -DUSE_FREEIMAGE=ON
       - -DUSE_VTK=ON
       - -DUSE_RAPIDJSON=ON
-      - -DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF
       - -DBUILD_DOC_Overview=OFF
-      - -D3RDPARTY_VTK_INCLUDE_DIR=/app/include/vtk-9.4/
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - -DUSE_FREEIMAGE=ON
     cleanup:
       - /bin
+      - /share/opencascade
+      - /share/doc
     sources:
-      - type: git
-        url: https://github.com/FreeCAD/OCCT.git
-        commit: 8db1faa32e326889fc770b4389629d686ccb52d5 # tag patched/V7_8_1
-      - type: patch # upstream patch, included in occt 7.9 release
-        path: patches/occt-freetype-fix-compilation.patch
+      - type: archive
+        url: https://github.com/Open-Cascade-SAS/OCCT/archive/refs/tags/V7_9_3.tar.gz
+        sha256: 5ecf094ec6b12d5413dfb851d8c3590c354058aee556e32e408bdfbf8c357d57
 
   - name: netgen
     buildsystem: cmake-ninja
