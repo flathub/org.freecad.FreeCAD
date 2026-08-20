@@ -294,31 +294,6 @@ modules:
         url: https://downloads.unidata.ucar.edu/netcdf-c/4.9.2/netcdf-c-4.9.2.tar.gz
         sha256: cf11babbbdb9963f09f55079e0b019f6d0371f52f8e1264a5ba8e9fdab1a6c48
 
-  - name: freeimage
-    buildsystem: simple
-    build-options:
-      cxxflags: -std=c++14
-      cflags: -Wno-error=implicit-function-declaration
-      arch:
-        aarch64:
-          # See https://sourceforge.net/p/freeimage/bugs/325/
-          cflags: -fPIC -DPNG_ARM_NEON_OPT=0
-          cxxflags: -fPIC
-    build-commands:
-      - sh gensrclist.sh
-      - sh genfipsrclist.sh
-      - make -f Makefile.gnu -j $FLATPAK_BUILDER_N_JOBS
-      - make -f Makefile.fip -j $FLATPAK_BUILDER_N_JOBS
-      - make -f Makefile.gnu INCDIR=/app/include INSTALLDIR=/app/lib install
-      - make -f Makefile.fip INCDIR=/app/include INSTALLDIR=/app/lib install
-    sources:
-      - type: archive
-        url: https://downloads.sourceforge.net/project/freeimage/Source%20Distribution/3.18.0/FreeImage3180.zip
-        sha256: f41379682f9ada94ea7b34fe86bf9ee00935a3147be41b6569c9605a53e438fd
-      - type: shell
-        commands:
-          - sed -i 's/-o root -g root //g' Makefile.{gnu,fip}
-
   - name: VTK
     buildsystem: cmake-ninja
     builddir: true
@@ -368,26 +343,6 @@ modules:
         url: https://github.com/PointCloudLibrary/pcl/archive/refs/tags/pcl-1.15.1.tar.gz
         sha256: e1d862c7b6bd27a45884a825a2e509bfcbd4561307d5bfe17ce5c8a3d94a6c29
 
-  - name: rapidjson
-    buildsystem: cmake-ninja
-    config-opts:
-      - -DRAPIDJSON_BUILD_DOC=OFF
-      - -DRAPIDJSON_BUILD_EXAMPLES=OFF
-      - -DRAPIDJSON_BUILD_TESTS=OFF
-      - -DRAPIDJSON_BUILD_THIRDPARTY_GTEST=OFF
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-    cleanup:
-      - /include
-      - /lib/cmake
-      - /lib/pkgconfig
-      - /share/doc
-    sources:
-      - type: archive
-        url: https://github.com/Tencent/rapidjson/archive/refs/tags/v1.1.0.tar.gz
-        sha256: bf7ced29704a1e696fbccf2a2b4ea068e7774fa37f6d7dd4039d0787f8bed98e
-      - type: patch
-        path: patches/rapidjson-remove-assignment-operator.patch
-
   # for opencascade. It was dropped from 24.08 runtime.
   - name: tcl
     subdir: unix
@@ -397,14 +352,13 @@ modules:
       - /bin
       - /man
     post-install:
-      # Needed for graphviz
       - ln -s tclsh8.6 /app/bin/tclsh
       - chmod 755 /app/lib/libtcl*.so
     sources:
       - type: archive
         url: https://downloads.sourceforge.net/project/tcl/Tcl/8.6.17/tcl8.6.17-src.tar.gz
         sha256: a3903371efcce8a405c5c245d029e9f6850258a60fa3761c4d58995610949b31
-
+  # Tk will be cleaned up, but this tree of OCCT can not build without it.
   - name: tk
     subdir: unix
     build-options:
@@ -412,8 +366,7 @@ modules:
     make-install-args:
       - install-private-headers
     cleanup:
-      - /bin
-      - /man
+      - '*'
     post-install:
       - chmod 755 /app/lib/libtk*.so
     sources:
@@ -426,12 +379,15 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
-      - -DUSE_FREEIMAGE=ON
+      - -DUSE_FREEIMAGE=OFF
       - -DUSE_VTK=ON
-      - -DUSE_RAPIDJSON=ON
+      - -DUSE_RAPIDJSON=OFF
       - -DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF
       - -DBUILD_DOC_Overview=OFF
       - -D3RDPARTY_VTK_INCLUDE_DIR=/app/include/vtk-9.4/
+      # This is not enough to not require TCL, at least with this version of OCCT
+      - -DUSE_TK=OFF
+      - -DUSE_TCL=OFF
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     cleanup:
       - /bin
