@@ -1,0 +1,36 @@
+diff --git a/cmake/pcl_find_boost.cmake b/cmake/pcl_find_boost.cmake
+index 381024ea4..bd5616f6c 100644
+--- a/cmake/pcl_find_boost.cmake
++++ b/cmake/pcl_find_boost.cmake
+@@ -15,12 +15,12 @@ endif()
+ 
+ if(CMAKE_CXX_STANDARD MATCHES "14")
+   # Optional boost modules
+-  set(BOOST_OPTIONAL_MODULES serialization mpi system)
++  set(BOOST_OPTIONAL_MODULES serialization mpi)
+   # Required boost modules
+   set(BOOST_REQUIRED_MODULES filesystem iostreams)
+ else()
+   # Optional boost modules
+-  set(BOOST_OPTIONAL_MODULES filesystem serialization mpi system)
++  set(BOOST_OPTIONAL_MODULES filesystem serialization mpi)
+   # Required boost modules
+   set(BOOST_REQUIRED_MODULES iostreams)
+ endif()
+diff --git a/outofcore/CMakeLists.txt b/outofcore/CMakeLists.txt
+index 2d613c1ef..1d668c5ea 100644
+--- a/outofcore/CMakeLists.txt
++++ b/outofcore/CMakeLists.txt
+@@ -76,10 +76,10 @@ set(LIB_NAME "pcl_${SUBSYS_NAME}")
+ 
+ if(BUILD_visualization)
+   PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${SUBSYS_NAME} SOURCES ${srcs} ${incs} ${impl_incs} ${visualization_incs})
+-  target_link_libraries("${LIB_NAME}" pcl_common pcl_visualization Boost::system Boost::filesystem)
++  target_link_libraries("${LIB_NAME}" pcl_common pcl_visualization Boost::filesystem)
+ else()
+   PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${SUBSYS_NAME} SOURCES ${srcs} ${incs} ${impl_incs})
+-  target_link_libraries("${LIB_NAME}" pcl_common Boost::system Boost::filesystem)
++  target_link_libraries("${LIB_NAME}" pcl_common Boost::filesystem)
+ endif()
+ if(HAVE_CJSON)
+   target_link_libraries("${LIB_NAME}" ${CJSON_LIBRARIES})

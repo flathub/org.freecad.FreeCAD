@@ -376,14 +376,22 @@ modules:
       - -DBUILD_global_tests=OFF
       - -DBUILD_examples=OFF
       - -DBUILD_apps=OFF
+      - -DBUILD_outofcore=OFF
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
     cleanup:
       - /include
       - /lib/cmake
       - /lib/pkgconfig
+      - /share/pcl-1.15
+      - /bin
     sources:
       - type: archive
         url: https://github.com/PointCloudLibrary/pcl/archive/refs/tags/pcl-1.15.1.tar.gz
         sha256: e1d862c7b6bd27a45884a825a2e509bfcbd4561307d5bfe17ce5c8a3d94a6c29
+      - type: patch
+        path: patches/pcl-boost-system.patch
+      - type: patch
+        path: patches/pcl-fix-link.patch
 
   - name: rapidjson
     buildsystem: cmake-ninja
