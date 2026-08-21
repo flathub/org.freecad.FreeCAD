@@ -229,23 +229,30 @@ modules:
         - pip3 install . --verbose --exists-action=i --no-index --prefix=${FLATPAK_DEST} --no-build-isolation
   # modules used in freecad and matplotlib dependencies
   - python3-modules.yaml
+
+  - name: qhull
+    buildsystem: cmake-ninja
+    cleanup:
+      - /bin
+      - /share/doc
+    config-opts:
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - -DBUILD_STATIC_LIBS=OFF
+      - -DLINK_APPS_SHARED=ON
+    sources:
+      - type: archive
+        url: http://www.qhull.org/download/qhull-2020-src-8.0.2.tgz
+        sha256: b5c2d7eb833278881b952c8a52d20179eab87766b00b865000469a45c1838b7e
+
   # matplotlib requires additional sources so we can't simply use flatpak-pip-generator for it
   - name: python3-matplotlib
     buildsystem: simple
     build-commands:
-      - python3 setup.py install --prefix=/app --root=/
+      - python -m pip install --root=/ --prefix=/app --no-build-isolation --config-settings=setup-args="-Dsystem-freetype=true" --config-settings=setup-args="-Dsystem-qhull=true" .
     sources:
       - type: archive
-        dest: build/freetype-2.6.1
-        url: https://downloads.sourceforge.net/project/freetype/freetype2/2.6.1/freetype-2.6.1.tar.gz
-        sha256: 0a3c7dfbda6da1e8fce29232e8e96d987ababbbf71ebc8c75659e4132c367014
-      - type: archive
-        dest: build/qhull-2020.2
-        url: http://www.qhull.org/download/qhull-2020-src-8.0.2.tgz
-        sha256: b5c2d7eb833278881b952c8a52d20179eab87766b00b865000469a45c1838b7e
-      - type: archive
-        url: https://files.pythonhosted.org/packages/b6/f0/3836719cc3982fbba3b840d18a59db1d0ee9ac7986f24e8c0a092851b67b/matplotlib-3.7.5.tar.gz
-        sha256: 1e5c971558ebc811aa07f54c7b7c677d78aa518ef4c390e14673a09e0860184a
+        url: https://files.pythonhosted.org/packages/df/17/1747b4154034befd0ed33b52538f5eb7752d05bb51c5e2a31470c3bc7d52/matplotlib-3.9.4.tar.gz
+        sha256: 1e00e8be7393cbdc6fedfa8a6fba02cf3e83814b285db1c60b906a023ba41bc3
 
   - name: git
     make-args:
@@ -267,7 +274,6 @@ modules:
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-      - -DBUILD_TESTING=ON
     cleanup:
       - /bin
     sources:
