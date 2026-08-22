@@ -305,6 +305,7 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
       - -DNETCDF_ENABLE_EXAMPLES=OFF
       - -DBUILD_TESTING=OFF
+      - -Wno-dev
     cleanup:
       - /bin
     sources:
