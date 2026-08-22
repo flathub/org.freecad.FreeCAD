@@ -27,7 +27,9 @@ cleanup:
   - /include
   - /share/aclocal
   - /share/cmake
+  - /share/doc
   - /share/pkgconfig
+  - /share/info
   - /lib/cmake
   - /lib/pkgconfig
   - /share/man
@@ -48,6 +50,11 @@ modules:
       - /bin
       - /lib/plugins/designer
       - /PySide6
+      - /lib/python3*/site-packages/PySide6/include
+      - /lib/python3*/site-packages/PySide6/glue
+      - /lib/python3*/site-packages/PySide6/lib/cmake
+      - /lib/python3*/site-packages/shiboken6/include
+      - /lib/python3*/site-packages/shiboken6/lib/cmake
     sources:
       - type: archive
         url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.11.1-src/pyside-setup-everywhere-src-6.11.1.tar.xz
@@ -114,6 +121,9 @@ modules:
   - name: openmpi
     cleanup:
       - /bin
+      - /share/hwloc
+      - /share/openmpi
+      - /share/pmix
     sources:
       - type: archive
         url: https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.5.tar.bz2
@@ -255,6 +265,8 @@ modules:
         sha256: 1e00e8be7393cbdc6fedfa8a6fba02cf3e83814b285db1c60b906a023ba41bc3
 
   - name: git
+    cleanup:
+      - /share/perl5
     make-args:
       - NO_TCLTK=YesPlease
       - INSTALL_SYMLINKS=1
@@ -336,9 +348,11 @@ modules:
       - -DBUILD_examples=OFF
       - -DBUILD_apps=OFF
     cleanup:
+      - /bin
       - /include
       - /lib/cmake
       - /lib/pkgconfig
+      - /share/pcl-*
     sources:
       - type: archive
         url: https://github.com/PointCloudLibrary/pcl/archive/refs/tags/pcl-1.15.1.tar.gz
