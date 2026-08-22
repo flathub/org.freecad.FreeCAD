@@ -15,8 +15,6 @@ finish-args:
   - --filesystem=xdg-run/gvfs # make GnomeVFS accessible
   - --filesystem=/run/spnav.sock:ro # allow access to spacenavd
   - --talk-name=org.freedesktop.Flatpak # to launch openscad
-  # Currently PySide is installed that way.
-  - --env=LD_LIBRARY_PATH=/app/lib/python3.13/site-packages/shiboken6/:/app/lib/python3.13/site-packages/PySide6/
   - --env=TMPDIR=/var/tmp
   - --env=SPNAV_SOCKET=/run/spnav.sock
 sdk-extensions:
@@ -39,35 +37,6 @@ build-options:
 modules:
 
   - shared-modules/glu/glu-9.json
-
-  - name: pyside
-    buildsystem: simple
-    build-options:
-      cflags: -I/usr/include/python3.13
-    cleanup:
-      - /bin
-      - /lib/plugins/designer
-      - /PySide6
-      - /lib/python3*/site-packages/PySide6/include
-      - /lib/python3*/site-packages/PySide6/glue
-      - /lib/python3*/site-packages/PySide6/lib/cmake
-      - /lib/python3*/site-packages/shiboken6/include
-      - /lib/python3*/site-packages/shiboken6/lib/cmake
-    sources:
-      - type: archive
-        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.11.1-src/pyside-setup-everywhere-src-6.11.1.tar.xz
-        sha256: 6ffd9835bb0dd2c56f061d62f1616bb1707cfc0202b80e3165d6be087f3965e2
-      - type: shell
-        commands:
-          - cp -R /usr/include/Qt* sources/pyside6/PySide6/
-          # Path PySide6
-    build-commands:
-      - python setup.py build --qtpaths=/usr/bin/qtpaths --flatpak
-      - python3 create_wheels.py --build-dir ./build/qfp-*-release
-      - rm -fr ./dist/pyside6*examples*.whl
-      - pip install ./dist/*.whl --prefix=${FLATPAK_DEST}
-    modules:
-      - python3-patchelf.json
 
   - name: swig
     config-opts:
@@ -227,6 +196,32 @@ modules:
         url: https://github.com/coin3d/soqt.git
         tag: v1.6.4
         commit: cfc4fee34d003aa454aa55159828081fc7cbbe38
+
+  - name: pyside
+    buildsystem: cmake-ninja
+    builddir: true
+    build-options:
+      env:
+        PYTHONPATH: /run/build/pyside/_flatpak_build/sources
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_TESTS=OFF
+      - -DFORCE_LIMITED_API=OFF
+      #- -DNUMPY_INCLUDE_DIR=/app/lib/python3.13/site-packages/numpy/_core/include
+      - -DSHIBOKEN_FORCE_PROCESS_SYSTEM_INCLUDE_PATHS=/usr/include
+    cleanup:
+      - /bin
+      - /lib/plugins/designer
+      - /PySide6
+    sources:
+      - type: archive
+        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.11.1-src/pyside-setup-everywhere-src-6.11.1.tar.xz
+        sha256: 6ffd9835bb0dd2c56f061d62f1616bb1707cfc0202b80e3165d6be087f3965e2
+      - type: patch
+        paths:
+          - patches/pyside-fix-header-installation-path.patch
+          - patches/pyside-fix-header-packaging.patch
+
   - name: pivy
     buildsystem: cmake-ninja
     config-opts:
