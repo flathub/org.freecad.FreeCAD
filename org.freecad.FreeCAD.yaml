@@ -83,6 +83,9 @@ modules:
     buildsystem: cmake-ninja
     builddir: true
     config-opts:
+      - -DEIGEN_BUILD_BLAS=OFF
+      - -DEIGEN_BUILD_LAPACK=OFF
+      - -DBUILD_TESTING=OFF
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     cleanup:
       - '*'
@@ -90,6 +93,18 @@ modules:
       - type: archive
         url: https://gitlab.com/libeigen/eigen/-/archive/3.4.1/eigen-3.4.1.tar.bz2
         sha256: 8bb7280b7551bf06418d11a9671fdf998cb927830cf21589b394382d26779821
+
+  - name: OpenBLAS
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - -DDYNAMIC_ARCH=ON
+    sources:
+      - type: archive
+        url: https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.34/OpenBLAS-0.3.34.tar.gz
+        sha256: cd7e129868320cc2d033afa920e31202dfe0b8066a5b66661900ccc0f197dfed
 
   - name: graphviz
     sources:
@@ -494,19 +509,6 @@ modules:
         url: https://github.com/IfcOpenShell/IfcOpenShell.git
         tag: ifcopenshell-python-0.8.4
         commit: 158fe92644cfe2bc37be513d9838c95d9f2233cf
-  - name: lapack
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
-      - -DBUILD_TESTING=OFF
-      - -DLAPACK_TESTING_USE_PYTHON=OFF
-    sources:
-      - type: archive
-        url: https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.10.1.tar.gz
-        sha256: cd005cd021f144d7d5f7f33c943942db9f03a28d110d6a3b80d718a295f7f714
-      - type: patch
-        path: patches/lapack-cmake.patch
 
   - name: arpack
     buildsystem: cmake-ninja
@@ -540,18 +542,6 @@ modules:
           - http://www.netlib.org/linalg/spooles/spooles.2.2.tgz # can be slow
       - type: patch
         path: patches/spooles-fix-compilation.patch
-
-  - name: OpenBLAS
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-      - -DDYNAMIC_ARCH=ON
-    sources:
-      - type: archive
-        url: https://github.com/OpenMathLib/OpenBLAS/archive/refs/tags/v0.3.28.tar.gz
-        sha256: f1003466ad074e9b0c8d421a204121100b0751c96fc6fcf3d1456bd12f8a00a1
 
   - name: calculix-ccx
     buildsystem: simple
