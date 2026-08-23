@@ -192,6 +192,26 @@ modules:
         tag: v1.6.4
         commit: cfc4fee34d003aa454aa55159828081fc7cbbe38
 
+  # modules required to build pybind11, opencamlib and kiwisolver
+  - python3-build-dependencies.yaml
+
+  # pybind from pip doesn't install cmake and include files where freecad finds them so we use cmake
+  - name: pybind11
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    sources:
+      - type: archive
+        url: https://github.com/pybind/pybind11/archive/refs/tags/v3.0.2.tar.gz
+        sha256: 2f20a0af0b921815e0e169ea7fec63909869323581b89d7de1553468553f6a2d
+      - type: shell
+        commands:
+        - pip3 install . --verbose --exists-action=i --no-index --prefix=${FLATPAK_DEST} --no-build-isolation
+
+  # modules used in pyside, FreeCAD and matplotlib dependencies
+  - python3-modules.yaml
+
   - name: pyside
     buildsystem: cmake-ninja
     builddir: true
@@ -202,7 +222,7 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
       - -DBUILD_TESTS=OFF
       - -DFORCE_LIMITED_API=OFF
-      #- -DNUMPY_INCLUDE_DIR=/app/lib/python3.13/site-packages/numpy/_core/include
+      - -DNUMPY_INCLUDE_DIR=/app/lib/python3.13/site-packages/numpy/_core/include
       - -DSHIBOKEN_FORCE_PROCESS_SYSTEM_INCLUDE_PATHS=/usr/include
     cleanup:
       - /bin
@@ -231,24 +251,6 @@ modules:
           - |
             sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"].replace("/usr","/app"))')
             sed -i "s|\${Python_SITEARCH}|$sitepackagesDir|" {*/,./}CMakeLists.txt
-
-  # modules required to build pybind11, opencamlib and kiwisolver
-  - python3-build-dependencies.yaml
-  # pybind from pip doesn't install cmake and include files where freecad finds them so we use cmake
-  - name: pybind11
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
-    sources:
-      - type: archive
-        url: https://github.com/pybind/pybind11/archive/refs/tags/v3.0.2.tar.gz
-        sha256: 2f20a0af0b921815e0e169ea7fec63909869323581b89d7de1553468553f6a2d
-      - type: shell
-        commands:
-        - pip3 install . --verbose --exists-action=i --no-index --prefix=${FLATPAK_DEST} --no-build-isolation
-  # modules used in freecad and matplotlib dependencies
-  - python3-modules.yaml
 
   - name: qhull
     buildsystem: cmake-ninja
