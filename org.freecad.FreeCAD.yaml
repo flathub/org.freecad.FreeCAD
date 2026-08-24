@@ -302,13 +302,29 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     cleanup:
       - /bin
     sources:
       - type: archive
-        url: https://download.osgeo.org/geos/geos-3.7.0.tar.bz2
-        sha256: 4fbf41a792fd74293ab59e0a980e8654cd411a9d45416d66eaa12d53d1393fd7
+        url: https://github.com/libgeos/geos/releases/download/3.14.1/geos-3.14.1.tar.bz2
+        sha256: 3c20919cda9a505db07b5216baa980bacdaa0702da715b43f176fb07eff7e716
+
+  # This is necessary for ifcopenshell (in the BIM workbench). There is no error at build time
+  # nor tests when it is missing, but if you try to setup a new BIM project it will fail.
+  # See https://github.com/FreeCAD/FreeCAD/issues/28769
+  - name: python3-shapely
+    buildsystem: simple
+    build-options:
+      # This is where the numpy headers can be found.
+      cppflags: -I/app/lib/python3.13/site-packages/numpy/_core/include
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} "shapely" --no-build-isolation
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/4d/bc/0989043118a27cccb4e906a46b7565ce36ca7b57f5a18b78f4f1b0f72d9d/shapely-2.1.2.tar.gz
+        sha256: 2ed4ecb28320a433db18a5bf029986aa8afcfd740745e78847e330d5d94922a9
+
 
   - name: netcdf
     buildsystem: cmake-ninja
