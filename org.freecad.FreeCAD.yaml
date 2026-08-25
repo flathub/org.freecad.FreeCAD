@@ -72,6 +72,8 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
       - -DDYNAMIC_ARCH=ON
+      - -DBUILD_SHARED_LIBS=ON
+      - -DBUILD_STATIC_LIBS=OFF
     sources:
       - type: archive
         url: https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.34/OpenBLAS-0.3.34.tar.gz
@@ -358,6 +360,7 @@ modules:
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - -DBUILD_MATLAB_BINDINGS=OFF
       - -DBUILD_PYTHON_BINDINGS=OFF
+      - -DBUILD_STATIC_LIBS=OFF
       - -DBUILD_EXAMPLES=OFF
       - -DBUILD_TESTS=OFF
       - -DBUILD_DOC=OFF
@@ -501,8 +504,9 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
-      - -DTESTS=OFF
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - -DBUILD_SHARED_LIBS=ON
+      - -DBUILD_STATIC_LIBS=OFF
     build-options:
       env:
         FFLAGS: -fallow-argument-mismatch
@@ -580,6 +584,16 @@ modules:
         sha256: 07fd9b61c39c4d600e441d67edbafc1015e9e3fabd88b561a647f98fedf31d41
       - type: patch
         path: patches/opencamlib-boost-shared-no-git-version-command.patch
+
+  - name: elmerfem
+    buildsystem: cmake-ninja
+    builddir: true
+    cleanup:
+      - /share/elmersolver
+    sources:
+      - type: archive
+        url: https://github.com/ElmerCSC/elmerfem/releases/download/release-26.2.1/elmerfem-release-26.2.1.tar.gz
+        sha256: 729809851d07b0ee8d7aff636bc21745d65b35c94d90027f39958fb759ec1d31
 
   - name: opencv
     buildsystem: cmake-ninja

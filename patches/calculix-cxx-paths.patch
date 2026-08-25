@@ -22,8 +22,8 @@ diff -ur CalculiX/ccx_2.23/src/Makefile_MT CalculiX_new/ccx_2.23/src/Makefile_MT
 -       ../ARPACK/libarpack_INTEL.a \
 +       /app/lib/spoolesMT.a \
 +       /app/lib/spooles.a \
-+       /app/lib/libarpack.a \
-+       /app/lib/libopenblas.a \
++       /app/lib/libarpack.so \
++       /app/lib/libopenblas.so \
         -lpthread -lm
  
  ccx_2.23_MT: $(OCCXMAIN) ccx_2.23_MT.a  $(LIBS)
