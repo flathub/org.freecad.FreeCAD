@@ -182,18 +182,6 @@ modules:
       - type: archive
         url: https://github.com/coin3d/coin/releases/download/v4.0.8/coin-4.0.8-src.tar.gz
         sha256: aff6c7edf24cfb935edba46574ec5f83b543c47ff79e40c21fb92dc709b0f2c4
-  - name: soqt
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
-      - -DSOQT_BUILD_DOCUMENTATION=OFF
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-    sources:
-      - type: git
-        url: https://github.com/coin3d/soqt.git
-        tag: v1.6.4
-        commit: cfc4fee34d003aa454aa55159828081fc7cbbe38
 
   # modules required to build pybind11, opencamlib and kiwisolver
   - python3-build-dependencies.yaml
