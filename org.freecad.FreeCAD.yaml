@@ -110,6 +110,7 @@ modules:
       - /share/hwloc
       - /share/openmpi
       - /share/pmix
+      - /share/prte
     sources:
       - type: archive
         url: https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.5.tar.bz2
@@ -230,6 +231,8 @@ modules:
       - /bin
       - /lib/plugins/designer
       - /PySide6
+      - /share/PySide6/glue
+      - /share/PySide6/doc
     sources:
       - type: archive
         url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.11.1-src/pyside-setup-everywhere-src-6.11.1.tar.xz
@@ -281,6 +284,7 @@ modules:
   - name: git
     cleanup:
       - /share/perl5
+      - /share/gitweb
     make-args:
       - NO_TCLTK=YesPlease
       - INSTALL_SYMLINKS=1
@@ -348,6 +352,7 @@ modules:
     cleanup:
       - /bin
       - /share/doc
+      - /share/vtk-*/proj
     sources:
       - type: archive
         url: https://www.vtk.org/files/release/9.4/VTK-9.4.2.tar.gz
