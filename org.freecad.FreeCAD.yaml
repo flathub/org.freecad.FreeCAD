@@ -320,7 +320,6 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
-      - -DNETCDF_ENABLE_EXAMPLES=OFF
       - -DBUILD_TESTING=OFF
       - -Wno-dev
     cleanup:
@@ -500,6 +499,7 @@ modules:
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
       - -DBUILD_SHARED_LIBS=ON
       - -DBUILD_STATIC_LIBS=OFF
+      - -DMPI=ON
     build-options:
       env:
         FFLAGS: -fallow-argument-mismatch
