@@ -448,6 +448,9 @@ modules:
       - type: archive
         url: https://ftp.gnu.org/gnu/mpfr/mpfr-3.1.5.tar.xz
         sha256: 015fde82b3979fbe5f83501986d328331ba8ddf008c1ff3da3c238f49ca062bc
+        mirror-urls:
+          - https://mirrors.ibiblio.org/gnu/mpfr/mpfr-3.1.5.tar.xz
+          - https://ftp.wayne.edu/gnu/mpfr/mpfr-3.1.5.tar.xz
   - name: cgal
     cleanup:
       - /include
