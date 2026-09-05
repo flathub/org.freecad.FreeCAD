@@ -57,7 +57,6 @@ modules:
       - -DEIGEN_BUILD_BLAS=OFF
       - -DEIGEN_BUILD_LAPACK=OFF
       - -DBUILD_TESTING=OFF
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     cleanup:
       - '*'
     sources:
@@ -70,7 +69,6 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
       - -DDYNAMIC_ARCH=ON
       - -DBUILD_SHARED_LIBS=ON
       - -DBUILD_STATIC_LIBS=OFF
