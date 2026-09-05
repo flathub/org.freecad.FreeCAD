@@ -57,7 +57,6 @@ modules:
       - -DEIGEN_BUILD_BLAS=OFF
       - -DEIGEN_BUILD_LAPACK=OFF
       - -DBUILD_TESTING=OFF
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     cleanup:
       - '*'
     sources:
@@ -70,7 +69,6 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
       - -DDYNAMIC_ARCH=ON
       - -DBUILD_SHARED_LIBS=ON
       - -DBUILD_STATIC_LIBS=OFF
@@ -432,10 +430,9 @@ modules:
       - /bin
     sources:
       - type: git
-        url: https://github.com/FreeCAD/OCCT.git
-        commit: 8db1faa32e326889fc770b4389629d686ccb52d5 # tag patched/V7_8_1
-      - type: patch # upstream patch, included in occt 7.9 release
-        path: patches/occt-freetype-fix-compilation.patch
+        url: https://github.com/Open-Cascade-SAS/OCCT
+        tag: V7_9_3
+        commit: a016080bf6738d6aeae020badee4e888ad1540a5
 
   # new deps for IfcOpenShell
   - name: mpfr
