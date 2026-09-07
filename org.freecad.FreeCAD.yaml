@@ -171,15 +171,14 @@ modules:
     builddir: true
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
       - -DZLIB_RUNTIME_LINKING=OFF
       - -DCOIN_BUILD_TESTS=OFF
     cleanup:
       - /bin
     sources:
       - type: archive
-        url: https://github.com/coin3d/coin/releases/download/v4.0.8/coin-4.0.8-src.tar.gz
-        sha256: aff6c7edf24cfb935edba46574ec5f83b543c47ff79e40c21fb92dc709b0f2c4
+        url: https://github.com/coin3d/coin/releases/download/v4.0.10/coin-4.0.10-src.tar.gz
+        sha256: 13fe68831292e7e725e7db1c6909d2b4fe5802080474c229fcac14ddf6445188
 
   # modules required to build pybind11, opencamlib and kiwisolver
   - python3-build-dependencies.yaml
