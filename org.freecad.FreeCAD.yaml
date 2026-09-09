@@ -472,12 +472,12 @@ modules:
       - sed -i 's|/usr|/app|g' ifcwrap/cmake_install.cmake
     post-install:
       # IfcOpenShell doesn't set the version.
-      - python "../../conda/update_version_init.py" "0.8.4" "/app/lib/python3.13/site-packages/ifcopenshell/__init__.py"
+      - python "../../conda/update_version_init.py" "0.8.5" "/app/lib/python3.13/site-packages/ifcopenshell/__init__.py"
     sources:
       - type: git
         url: https://github.com/IfcOpenShell/IfcOpenShell.git
-        tag: ifcopenshell-python-0.8.4
-        commit: 158fe92644cfe2bc37be513d9838c95d9f2233cf
+        tag: ifcopenshell-python-0.8.5
+        commit: 16723d11cab9bc8a13b4e025a00d39445ccc462e
 
   - name: arpack
     buildsystem: cmake-ninja
