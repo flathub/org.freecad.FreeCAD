@@ -220,8 +220,8 @@ modules:
       - /share/PySide6/doc
     sources:
       - type: archive
-        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.11.1-src/pyside-setup-everywhere-src-6.11.1.tar.xz
-        sha256: 6ffd9835bb0dd2c56f061d62f1616bb1707cfc0202b80e3165d6be087f3965e2
+        url: https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.11.2-src/pyside-setup-everywhere-src-6.11.2.tar.xz
+        sha256: cba47efbaad1bedd529725cbc14e21f156c7a19366f07b3edfbb076ffd7afdf8
       - type: patch
         paths:
           - patches/pyside-fix-header-installation-path.patch
