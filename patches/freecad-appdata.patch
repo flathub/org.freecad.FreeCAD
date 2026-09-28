@@ -1,0 +1,28 @@
+diff --git a/src/XDGData/org.freecad.FreeCAD.metainfo.xml.in b/src/XDGData/org.freecad.FreeCAD.metainfo.xml.in
+index c12ab15941..6248cf5009 100644
+--- a/src/XDGData/org.freecad.FreeCAD.metainfo.xml.in
++++ b/src/XDGData/org.freecad.FreeCAD.metainfo.xml.in
+@@ -33,19 +33,19 @@
+   <screenshots>
+     <screenshot type="default">
+       <caption>Part Design</caption>
+-      <image>https://raw.githubusercontent.com/FreeCAD/FreeCAD/main/.github/images/partdesign.png</image>
++      <image>https://raw.githubusercontent.com/FreeCAD/FreeCAD/1.1.4/.github/images/partdesign.png</image>
+     </screenshot>
+     <screenshot>
+       <caption>Assembly</caption>
+-      <image>https://raw.githubusercontent.com/FreeCAD/FreeCAD/main/.github/images/assembly.png</image>
++      <image>https://raw.githubusercontent.com/FreeCAD/FreeCAD/1.1.4/.github/images/assembly.png</image>
+     </screenshot>
+     <screenshot>
+       <caption>BIM</caption>
+-      <image>https://raw.githubusercontent.com/FreeCAD/FreeCAD/main/.github/images/bim.png</image>
++      <image>https://raw.githubusercontent.com/FreeCAD/FreeCAD/1.1.4/.github/images/bim.png</image>
+     </screenshot>
+     <screenshot>
+       <caption>FEM</caption>
+-      <image>https://raw.githubusercontent.com/FreeCAD/FreeCAD/main/.github/images/fem.png</image>
++      <image>https://raw.githubusercontent.com/FreeCAD/FreeCAD/1.1.4/.github/images/fem.png</image>
+     </screenshot>
+   </screenshots>
+   <keywords>
