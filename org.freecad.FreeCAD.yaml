@@ -641,8 +641,12 @@ modules:
           # echo $(($(curl -s 'https://api.github.com/repos/FreeCAD/FreeCAD/compare/120ca87015...'"$gitRef"'' | grep '"ahead_by":' | sed -s 's/ //g;s/"ahead_by"://;s/,//')+1))
           - |
             revcount=45039
-            sed -i 's|${PACKAGE_WCREF}|'"$revcount"' (Git)|' src/Build/Version.h.cmake
-            sed -i 's|${PACKAGE_WCURL}|https://github.com/FreeCAD/FreeCAD.git|' src/Build/Version.h.cmake
+            version_file=src/Build/FreeCADVersion.txt.cmake
+            if [ ! -f "$version_file" ]; then
+              version_file=src/Build/Version.h.cmake
+            fi
+            sed -i 's|${PACKAGE_WCREF}|'"$revcount"' (Git)|' "$version_file"
+            sed -i 's|${PACKAGE_WCURL}|https://github.com/FreeCAD/FreeCAD.git|' "$version_file"
           - | # fix paths for flatpak environment
             sed -i 's|/usr|/app|g' cMake/FindOCC.cmake src/Gui/GraphvizView.cpp
             sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"].replace("/usr","/app"))')
