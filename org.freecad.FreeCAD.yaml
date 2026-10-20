@@ -568,19 +568,6 @@ modules:
         url: https://github.com/ElmerCSC/elmerfem/releases/download/release-26.2.1/elmerfem-release-26.2.1.tar.gz
         sha256: 729809851d07b0ee8d7aff636bc21745d65b35c94d90027f39958fb759ec1d31
 
-  - name: opencv
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
-      - -DBUILD_TESTS=OFF
-      - -DBUILD_PERF_TESTS=OFF
-      - -DBUILD_EXAMPLES=OFF
-    sources:
-      - type: archive
-        url: https://github.com/opencv/opencv/archive/refs/tags/4.13.0.tar.gz
-        sha256: 1d40ca017ea51c533cf9fd5cbde5b5fe7ae248291ddf2af99d4c17cf8e13017d
-
   - name: FreeCAD
     buildsystem: cmake-ninja
     builddir: true

@@ -1,4 +1,4 @@
-# Generated with flatpak-pip-generator --ignore-installed pip --yaml pip cppy contourpy cycler fonttools kiwisolver numpy pillow pyparsing python_dateutil six pycollada mathutils lark typing_extensions ply pyyaml requests defusedxml pysolar
+# Generated with flatpak-pip-generator --ignore-installed pip --yaml pip cppy contourpy cycler fonttools kiwisolver numpy pillow pyparsing python_dateutil six pycollada mathutils lark typing_extensions ply pyyaml requests defusedxml pysolar av==16.1.0
 build-commands: []
 buildsystem: simple
 modules:
@@ -203,4 +203,13 @@ modules:
   - type: file
     url: https://files.pythonhosted.org/packages/71/d4/d9440ff5da6547ac2587f93a9af7e779be0aed78e1f0734dede94e440f6b/pysolar-0.13-py3-none-any.whl
     sha256: 9019323af1a4db0b1cd5df5570b34a22b290f5ee817497aacfd63475779da004
+- name: python3-av
+  buildsystem: simple
+  build-commands:
+  - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+    --prefix=${FLATPAK_DEST} "av==16.1.0" --no-build-isolation
+  sources:
+  - type: file
+    url: https://files.pythonhosted.org/packages/78/cd/3a83ffbc3cc25b39721d174487fb0d51a76582f4a1703f98e46170ce83d4/av-16.1.0.tar.gz
+    sha256: a094b4fd87a3721dacf02794d3d2c82b8d712c85b9534437e82a8a978c175ffd
 name: python3-modules
