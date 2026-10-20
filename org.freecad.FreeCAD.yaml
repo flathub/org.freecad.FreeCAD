@@ -167,6 +167,18 @@ modules:
         url: https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.bz2
         sha256: 1bed88e40401b2cb7a1f76d4bab499e352fa4d0c5f31c0dbae64e24d34d7513b
 
+  - name: geos
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+    cleanup:
+      - /bin
+    sources:
+      - type: archive
+        url: https://github.com/libgeos/geos/releases/download/3.14.1/geos-3.14.1.tar.bz2
+        sha256: 3c20919cda9a505db07b5216baa980bacdaa0702da715b43f176fb07eff7e716
+
   # modules required to build pybind11, opencamlib and kiwisolver
   - python3-build-dependencies.yaml
 
@@ -254,35 +266,6 @@ modules:
       - type: archive
         url: https://www.kernel.org/pub/software/scm/git/git-2.49.0.tar.gz
         sha256: f8047f572f665bebeb637fd5f14678f31b3ca5d2ff9a18f20bd925bd48f75d3c
-
-  - name: geos
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
-    cleanup:
-      - /bin
-    sources:
-      - type: archive
-        url: https://github.com/libgeos/geos/releases/download/3.14.1/geos-3.14.1.tar.bz2
-        sha256: 3c20919cda9a505db07b5216baa980bacdaa0702da715b43f176fb07eff7e716
-
-  # This is necessary for ifcopenshell (in the BIM workbench). There is no error at build time
-  # nor tests when it is missing, but if you try to setup a new BIM project it will fail.
-  # See https://github.com/FreeCAD/FreeCAD/issues/28769
-  - name: python3-shapely
-    buildsystem: simple
-    build-options:
-      # This is where the numpy headers can be found.
-      cppflags: -I/app/lib/python3.13/site-packages/numpy/_core/include
-    build-commands:
-      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
-        --prefix=${FLATPAK_DEST} "shapely" --no-build-isolation
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/4d/bc/0989043118a27cccb4e906a46b7565ce36ca7b57f5a18b78f4f1b0f72d9d/shapely-2.1.2.tar.gz
-        sha256: 2ed4ecb28320a433db18a5bf029986aa8afcfd740745e78847e330d5d94922a9
-
 
   - name: netcdf
     buildsystem: cmake-ninja
