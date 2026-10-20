@@ -388,6 +388,27 @@ modules:
         commit: b8f597c677811d1f9f4d8a97f5ae2825c0353a42
         tag: V8.0.1
 
+  # netgen python module is used in FEM workbench
+  - name: netgen
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DUSE_PYTHON=ON
+      - -DPREFER_SYSTEM_PYBIND11=ON
+      - -DUSE_OCC=ON
+      - -DUSE_SUPERBUILD=OFF
+      - -DUSE_NATIVE_ARCH=OFF
+      - -DUSE_GUI=OFF
+    cleanup:
+      - /lib/cmake
+      - /include
+    sources:
+      - type: archive
+        url: https://github.com/NGSolve/netgen/archive/refs/tags/v6.2.2608.tar.gz
+        sha256: 64b49bc7407db9a22e61b9f5c9bddf01875df3f0c7c306e77110ba00b2f30813
+      - type: patch
+        path: patches/netgen-arm64-compile-fix.patch
+
   # new deps for IfcOpenShell
   - name: mpfr
     sources:
