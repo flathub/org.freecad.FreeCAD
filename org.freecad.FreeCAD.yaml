@@ -166,19 +166,6 @@ modules:
       - type: archive
         url: https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.bz2
         sha256: 1bed88e40401b2cb7a1f76d4bab499e352fa4d0c5f31c0dbae64e24d34d7513b
-  - name: coin
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
-      - -DZLIB_RUNTIME_LINKING=OFF
-      - -DCOIN_BUILD_TESTS=OFF
-    cleanup:
-      - /bin
-    sources:
-      - type: archive
-        url: https://github.com/coin3d/coin/releases/download/v4.0.10/coin-4.0.10-src.tar.gz
-        sha256: 13fe68831292e7e725e7db1c6909d2b4fe5802080474c229fcac14ddf6445188
 
   # modules required to build pybind11, opencamlib and kiwisolver
   - python3-build-dependencies.yaml
@@ -226,21 +213,6 @@ modules:
         paths:
           - patches/pyside-fix-header-installation-path.patch
           - patches/pyside-fix-header-packaging.patch
-
-  - name: pivy
-    buildsystem: cmake-ninja
-    config-opts:
-      - -DPIVY_USE_QT6=ON
-      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-    sources:
-      - type: archive
-        url: https://github.com/coin3d/pivy/archive/refs/tags/0.6.11.tar.gz
-        sha256: 78f79bd7d1ce7e8140ceba4b1220136ea1f14b4403b1e463c59fa892feed961e
-      - type: shell
-        commands:
-          - |
-            sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"].replace("/usr","/app"))')
-            sed -i "s|\${Python_SITEARCH}|$sitepackagesDir|" {*/,./}CMakeLists.txt
 
   - name: qhull
     buildsystem: cmake-ninja
