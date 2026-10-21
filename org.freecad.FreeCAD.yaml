@@ -80,8 +80,8 @@ modules:
   - name: graphviz
     sources:
       - type: archive
-        url: https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/13.1.1/graphviz-13.1.1.tar.gz
-        sha256: 7d90f72e34f6a07b5f7c23a52c6a9348f67ae68883689bcbfa58e34c67baf594
+        url: https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/16.1.0/graphviz-16.1.0.tar.gz
+        sha256: beea483ab130f456c1c3905f4f2e40778a9c493c3d73ae8012367d552d71ca84
       - type: shell
         commands:
           - sed -i '/LIBPOSTFIX="64"/s/64//' configure.ac
