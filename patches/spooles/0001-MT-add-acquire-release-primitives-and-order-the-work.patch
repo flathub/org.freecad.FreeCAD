@@ -1,0 +1,363 @@
+From cb806200085ebfa1ecf2b6018608ad65e49e299c Mon Sep 17 00:00:00 2001
+From: Jacob Oursland <jacob.oursland@gmail.com>
+Date: Mon, 7 Sep 2026 17:26:48 -0600
+Subject: [PATCH] MT: add acquire/release primitives and order the work-list
+ handoff
+
+This is the defect that corrupts the factorization.
+
+ChvList_addObjectToList() pushes the object onto heads[ilist] and then
+decrements counts[ilist], both under the list's mutex.  The consumer,
+FrontMtx_factorVisit(), reads both *without* the mutex:
+
+    if ( ChvList_isListNonempty(aggList, J) == 1 )
+       assembleAggregates(...) ;
+    if ( ChvList_isCountZero(aggList, J) == 1 ) {
+       if ( ChvList_isListNonempty(aggList, J) == 1 )
+          assembleAggregates(...) ;
+       allAggregatesHere = 'Y' ;      /* front is now factored */
+    }
+
+ChvList_isCountZero() and ChvList_isListNonempty() take no lock at all,
+and ChvList_getList() has an explicit unlocked fast path once the count
+reaches zero.  So a thread can observe counts[J] == 0 -- "every other
+thread has contributed" -- while heads[J] still reads NULL, conclude
+that no aggregates are pending, and factor front J without a
+Schur-complement update that another thread has in fact already
+produced.  The result is silently wrong by O(1), not a crash.
+
+On a total-store-ordered machine (x86, x86_64, SPARC TSO) the
+producer's stores reach memory in program order and the consumer's
+loads are not reordered, so the code mostly gets away with it.  On a
+weakly ordered machine (aarch64, armhf, ppc64el, riscv64, loong64)
+nothing orders them at all.  "Mostly" is doing real work in that
+sentence: the same reproducer still fails 8 runs in 2000 on x86_64.
+
+Add Utilities/SPOOLESatomic.h, a small set of acquire/release
+primitives over the __atomic builtins (with a __sync fallback for GCC
+before 4.7), and use them here: the heads[] store becomes a release
+store, the counts[] store a release store sequenced after it, and every
+consumer-side read of either an acquire load.  Observing counts[J]==0
+now implies observing heads[J] and everything the producer wrote into
+the object it published.
+
+The primitives deliberately operate on the *existing*, unqualified
+struct fields rather than introducing _Atomic-qualified members, so
+struct layouts, sizes and the library ABI are unchanged and this is safe
+to apply to an already-shipped shared library.  Every access is to a
+naturally aligned int, char or pointer, so they all inline -- no
+libatomic dependency.  On x86 an acquire load and a release store are
+ordinary MOVs; on aarch64 they become LDAPR/STLR on flag and pointer
+words only, never inside a numerical loop.
+
+The unlocked paths are ordered too, not just the locked ones -- the
+lock-free path is taken precisely when the count says the producers are
+finished, which is the case that was broken.
+
+Verified: this and the following two patches together take SPOOLES' own
+MT/drivers/testGridMT from 66/400 wrong at 20^3 on 4 threads (aarch64,
+Apple M-series, clang -O2) to 0/2000, and remove all 19 Chv_assembleChv
+and 6 real_updDenseColumns races ThreadSanitizer reported -- those were
+consequences of this missing edge, not separate defects.
+---
+ ChvList/src/util.c        | 32 +++++++------
+ SubMtxList/src/util.c     | 32 +++++++------
+ Utilities/SPOOLESatomic.h | 97 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 133 insertions(+), 28 deletions(-)
+ create mode 100644 Utilities/SPOOLESatomic.h
+
+diff --git a/ChvList/src/util.c b/ChvList/src/util.c
+index 33c752e..ea4d8dd 100644
+--- a/ChvList/src/util.c
++++ b/ChvList/src/util.c
+@@ -1,6 +1,7 @@
+ /*  util.c  */
+ 
+ #include "../ChvList.h"
++#include "../../Utilities/SPOOLESatomic.h"
+ 
+ #define MYDEBUG 0
+ 
+@@ -27,7 +28,7 @@ if ( chvlist == NULL || ilist < 0 || ilist >= chvlist->nlist ) {
+    fprintf(stderr, "\n fatal error in ChvList_isListNonempty(%p,%d)"
+            "\n bad input\n", chvlist, ilist) ;
+ }
+-return(chvlist->heads[ilist] != NULL) ; }
++return(SPOOLES_LOAD_ACQUIRE(&chvlist->heads[ilist]) != NULL) ; }
+ 
+ /*--------------------------------------------------------------------*/
+ /*
+@@ -55,7 +56,7 @@ if ( chvlist == NULL || ilist < 0 || ilist >= chvlist->nlist ) {
+ if ( chvlist->counts == NULL ) {
+    return(1) ;
+ } else {
+-   return(chvlist->counts[ilist] == 0) ;
++   return(SPOOLES_LOAD_ACQUIRE(&chvlist->counts[ilist]) == 0) ;
+ }
+ }
+ 
+@@ -102,11 +103,12 @@ if ( chvlist->lock != NULL
+ */
+    Lock_lock(chvlist->lock) ;
+    if ( chv != NULL ) {
+-      chv->next = chvlist->heads[ilist] ;
+-      chvlist->heads[ilist] = chv ;
++      chv->next = SPOOLES_LOAD_ACQUIRE(&chvlist->heads[ilist]) ;
++      SPOOLES_STORE_RELEASE(&chvlist->heads[ilist], chv) ;
+    }
+    if ( chvlist->counts != NULL ) {
+-      chvlist->counts[ilist]-- ;
++      SPOOLES_STORE_RELEASE(&chvlist->counts[ilist],
++                            SPOOLES_LOAD_RELAXED(&chvlist->counts[ilist]) - 1) ;
+    }
+    chvlist->nlocks++ ;
+    Lock_unlock(chvlist->lock) ;
+@@ -118,11 +120,12 @@ if ( chvlist->lock != NULL
+    ---------------------------------------------
+ */
+    if ( chv != NULL ) {
+-      chv->next = chvlist->heads[ilist] ;
+-      chvlist->heads[ilist] = chv ;
++      chv->next = SPOOLES_LOAD_ACQUIRE(&chvlist->heads[ilist]) ;
++      SPOOLES_STORE_RELEASE(&chvlist->heads[ilist], chv) ;
+    }
+    if ( chvlist->counts != NULL ) {
+-      chvlist->counts[ilist]-- ;
++      SPOOLES_STORE_RELEASE(&chvlist->counts[ilist],
++                            SPOOLES_LOAD_RELAXED(&chvlist->counts[ilist]) - 1) ;
+    }
+ }
+ #if MYDEBUG > 0
+@@ -163,17 +166,18 @@ if ( chvlist == NULL || ilist < 0 || ilist >= chvlist->nlist ) {
+ fprintf(stdout, "\n ChvList %p : get list %d", chvlist, ilist) ;
+ fflush(stdout) ;
+ #endif
+-if ( chvlist->heads[ilist] != NULL ) {
++if ( SPOOLES_LOAD_ACQUIRE(&chvlist->heads[ilist]) != NULL ) {
+    if ( chvlist->lock == NULL
+      || (chvlist->flags != NULL && chvlist->flags[ilist] == 'N')
+-     || (chvlist->counts != NULL && chvlist->counts[ilist] == 0) ) {
++     || (chvlist->counts != NULL
++        && SPOOLES_LOAD_ACQUIRE(&chvlist->counts[ilist]) == 0) ) {
+ /*
+       ------------------------
+       no need to lock the list
+       ------------------------
+ */
+-      chv = chvlist->heads[ilist] ;
+-      chvlist->heads[ilist] = NULL ;
++      chv = SPOOLES_LOAD_ACQUIRE(&chvlist->heads[ilist]) ;
++      SPOOLES_STORE_RELAXED(&chvlist->heads[ilist], (Chv *) NULL) ;
+    } else {
+ /*
+       ----------------------------------------------------
+@@ -181,8 +185,8 @@ if ( chvlist->heads[ilist] != NULL ) {
+       ----------------------------------------------------
+ */
+       Lock_lock(chvlist->lock) ;
+-      chv = chvlist->heads[ilist] ;
+-      chvlist->heads[ilist] = NULL ;
++      chv = SPOOLES_LOAD_ACQUIRE(&chvlist->heads[ilist]) ;
++      SPOOLES_STORE_RELAXED(&chvlist->heads[ilist], (Chv *) NULL) ;
+       chvlist->nlocks++ ;
+       Lock_unlock(chvlist->lock) ;
+    }
+diff --git a/SubMtxList/src/util.c b/SubMtxList/src/util.c
+index 8570a46..ee3365b 100644
+--- a/SubMtxList/src/util.c
++++ b/SubMtxList/src/util.c
+@@ -1,6 +1,7 @@
+ /*  util.c  */
+ 
+ #include "../SubMtxList.h"
++#include "../../Utilities/SPOOLESatomic.h"
+ 
+ #define MYDEBUG 0
+ 
+@@ -28,7 +29,7 @@ if ( list == NULL || ilist < 0 || ilist >= list->nlist ) {
+            "\n fatal error in SubMtxList_isListNonempty(%p,%d)"
+            "\n bad input\n", list, ilist) ;
+ }
+-return(list->heads[ilist] != NULL) ; }
++return(SPOOLES_LOAD_ACQUIRE(&list->heads[ilist]) != NULL) ; }
+ 
+ /*--------------------------------------------------------------------*/
+ /*
+@@ -56,7 +57,7 @@ if ( list == NULL || ilist < 0 || ilist >= list->nlist ) {
+ if ( list->counts == NULL ) {
+    return(1) ;
+ } else {
+-   return(list->counts[ilist] == 0) ;
++   return(SPOOLES_LOAD_ACQUIRE(&list->counts[ilist]) == 0) ;
+ }
+ }
+ 
+@@ -101,11 +102,12 @@ if ( list->lock != NULL
+ */
+    Lock_lock(list->lock) ;
+    if ( mtx != NULL ) {
+-      mtx->next = list->heads[ilist] ;
+-      list->heads[ilist] = mtx ;
++      mtx->next = SPOOLES_LOAD_ACQUIRE(&list->heads[ilist]) ;
++      SPOOLES_STORE_RELEASE(&list->heads[ilist], mtx) ;
+    }
+    if ( list->counts != NULL ) {
+-      list->counts[ilist]-- ;
++      SPOOLES_STORE_RELEASE(&list->counts[ilist],
++                            SPOOLES_LOAD_RELAXED(&list->counts[ilist]) - 1) ;
+    }
+    list->nlocks++ ;
+    Lock_unlock(list->lock) ;
+@@ -117,11 +119,12 @@ if ( list->lock != NULL
+    ---------------------------------------------
+ */
+    if ( mtx != NULL ) {
+-      mtx->next = list->heads[ilist] ;
+-      list->heads[ilist] = mtx ;
++      mtx->next = SPOOLES_LOAD_ACQUIRE(&list->heads[ilist]) ;
++      SPOOLES_STORE_RELEASE(&list->heads[ilist], mtx) ;
+    }
+    if ( list->counts != NULL ) {
+-      list->counts[ilist]-- ;
++      SPOOLES_STORE_RELEASE(&list->counts[ilist],
++                            SPOOLES_LOAD_RELAXED(&list->counts[ilist]) - 1) ;
+    }
+ }
+ #if MYDEBUG > 0
+@@ -162,17 +165,18 @@ if ( list == NULL || ilist < 0 || ilist >= list->nlist ) {
+ fprintf(stdout, "\n SubMtxList %p : get list %d", list, ilist) ;
+ fflush(stdout) ;
+ #endif
+-if ( list->heads[ilist] != NULL ) {
++if ( SPOOLES_LOAD_ACQUIRE(&list->heads[ilist]) != NULL ) {
+    if ( list->lock == NULL
+      || (list->flags != NULL && list->flags[ilist] == 'N')
+-     || (list->counts != NULL && list->counts[ilist] == 0) ) {
++     || (list->counts != NULL
++        && SPOOLES_LOAD_ACQUIRE(&list->counts[ilist]) == 0) ) {
+ /*
+       ------------------------
+       no need to lock the list
+       ------------------------
+ */
+-      mtx = list->heads[ilist] ;
+-      list->heads[ilist] = NULL ;
++      mtx = SPOOLES_LOAD_ACQUIRE(&list->heads[ilist]) ;
++      SPOOLES_STORE_RELAXED(&list->heads[ilist], (SubMtx *) NULL) ;
+    } else {
+ /*
+       ----------------------------------------------------
+@@ -180,8 +184,8 @@ if ( list->heads[ilist] != NULL ) {
+       ----------------------------------------------------
+ */
+       Lock_lock(list->lock) ;
+-      mtx = list->heads[ilist] ;
+-      list->heads[ilist] = NULL ;
++      mtx = SPOOLES_LOAD_ACQUIRE(&list->heads[ilist]) ;
++      SPOOLES_STORE_RELAXED(&list->heads[ilist], (SubMtx *) NULL) ;
+       list->nlocks++ ;
+       Lock_unlock(list->lock) ;
+    }
+diff --git a/Utilities/SPOOLESatomic.h b/Utilities/SPOOLESatomic.h
+new file mode 100644
+index 0000000..8fe393c
+--- /dev/null
++++ b/Utilities/SPOOLESatomic.h
+@@ -0,0 +1,97 @@
++/*  SPOOLESatomic.h  */
++
++#ifndef _SPOOLES_ATOMIC_
++#define _SPOOLES_ATOMIC_
++
++/*
++   --------------------------------------------------------------------
++   Acquire/release helpers for the multithreaded (MT) solvers.
++
++   The MT factorization and solve hand data between threads through
++   plain, unqualified memory: the ChvList/SubMtxList heads[] and
++   counts[] vectors, the frontIsDone[]/p_mtx[] pair in the solve, and
++   the lowerIsDone[]/diagIsDone[]/upperIsDone[] barriers.  In every case
++   a producer writes a payload and then publishes a flag or pointer, and
++   a consumer tests the flag and then reads the payload -- with no
++   synchronization between the two.
++
++   On a total-store-ordered machine (x86, x86_64, SPARC TSO) the
++   producer's stores reach memory in program order and the consumer's
++   loads are not reordered, so observing the flag implies observing the
++   payload and the code happens to be correct.  On a weakly ordered
++   machine (aarch64, armhf, ppc64el, riscv64, loong64) nothing orders
++   them and a consumer can act on a payload it cannot yet see.
++
++   These macros put a release store on each publication and an acquire
++   load on each consumption, which is exactly the missing edge.  They
++   deliberately operate on the *existing*, unqualified struct fields
++   rather than introducing _Atomic-qualified members, so that struct
++   layouts, sizes and the library ABI are unchanged and this is a
++   drop-in patch for an already-shipped shared library.
++
++   Cost: on x86 an acquire load and a release store are ordinary MOVs,
++   so TSO targets are unaffected.  On aarch64 they become LDAR/STLR on
++   flag and pointer words only -- not in any inner numerical loop.
++
++   created -- 2026sep07
++   --------------------------------------------------------------------
++*/
++
++#if defined(__ATOMIC_ACQUIRE) && defined(__ATOMIC_RELEASE)
++/*
++   GCC 4.7+, Clang 3.1+, ICC, and any compiler providing the __atomic
++   builtins.  Applying these to a non-_Atomic lvalue is supported and
++   generates the plain load/store plus the required barrier.
++*/
++#define SPOOLES_LOAD_ACQUIRE(ptr)       __atomic_load_n((ptr), __ATOMIC_ACQUIRE)
++#define SPOOLES_STORE_RELEASE(ptr, val) __atomic_store_n((ptr), (val), __ATOMIC_RELEASE)
++#define SPOOLES_LOAD_RELAXED(ptr)       __atomic_load_n((ptr), __ATOMIC_RELAXED)
++#define SPOOLES_STORE_RELAXED(ptr, val) __atomic_store_n((ptr), (val), __ATOMIC_RELAXED)
++#define SPOOLES_FETCH_ADD_RELAXED(ptr, val) \
++           __atomic_fetch_add((ptr), (val), __ATOMIC_RELAXED)
++#define SPOOLES_HAVE_ATOMICS 1
++
++#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 1))
++/*
++   Older GCC: the legacy __sync builtins only give us a full barrier,
++   which is stronger than needed but correct.  volatile keeps the
++   compiler from caching the flag across a spin loop.
++*/
++#define SPOOLES_LOAD_ACQUIRE(ptr)                                       \
++           ({ __typeof__(*(ptr)) _v = *(volatile __typeof__(*(ptr)) *)(ptr) ; \
++              __sync_synchronize() ; _v ; })
++#define SPOOLES_STORE_RELEASE(ptr, val)                                 \
++           do { __sync_synchronize() ;                                  \
++                *(volatile __typeof__(*(ptr)) *)(ptr) = (val) ; } while (0)
++#define SPOOLES_LOAD_RELAXED(ptr)       (*(volatile __typeof__(*(ptr)) *)(ptr))
++#define SPOOLES_STORE_RELAXED(ptr, val) \
++           do { *(volatile __typeof__(*(ptr)) *)(ptr) = (val) ; } while (0)
++#define SPOOLES_FETCH_ADD_RELAXED(ptr, val) __sync_fetch_and_add((ptr), (val))
++#define SPOOLES_HAVE_ATOMICS 1
++
++#else
++/*
++   No atomic builtins.  Fall back to plain accesses, which is what SPOOLES
++   2.2 has always done.  This is correct only on a total-store-ordered
++   machine; warn so that a weakly ordered port does not silently inherit
++   the original bug.
++
++   Note that __typeof__ is a GNU extension, so it cannot be used here --
++   this branch exists precisely for compilers that are not GCC-like.  The
++   spin loops in FrontMtx_workerSolve() are therefore not protected from
++   being hoisted; a compiler reaching this branch needs its own equivalent
++   of volatile there.
++*/
++#if defined(__aarch64__) || defined(__arm__) || defined(__powerpc__) \
++ || defined(__powerpc64__) || defined(__riscv) || defined(__loongarch__)
++#error "SPOOLES MT: no atomic builtins on a weakly ordered target.  The MT solvers return silently wrong results without them -- see Utilities/SPOOLESatomic.h.  Build without the MT library, or add acquire/release primitives for this compiler."
++#endif
++#define SPOOLES_LOAD_ACQUIRE(ptr)       (*(ptr))
++#define SPOOLES_STORE_RELEASE(ptr, val) do { *(ptr) = (val) ; } while (0)
++#define SPOOLES_LOAD_RELAXED(ptr)       (*(ptr))
++#define SPOOLES_STORE_RELAXED(ptr, val) do { *(ptr) = (val) ; } while (0)
++#define SPOOLES_FETCH_ADD_RELAXED(ptr, val) (*(ptr) += (val))
++#define SPOOLES_HAVE_ATOMICS 0
++#endif
++
++#endif /* _SPOOLES_ATOMIC_ */

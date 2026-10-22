@@ -1,0 +1,106 @@
+From 40e29ead7e0c1d43d85075179a51587c7e9e38f4 Mon Sep 17 00:00:00 2001
+From: Jacob Oursland <jacob.oursland@gmail.com>
+Date: Mon, 7 Sep 2026 17:26:49 -0600
+Subject: [PATCH] MT: order the frontIsDone[]/p_mtx[] publication in the solve
+
+The same defect shape in the triangular solve.  The thread that owns
+front J finishes it with
+
+    p_mtx[J]       = BJ   ;
+    frontIsDone[J] = 'Y'  ;
+
+and any other thread picks it up with
+
+    if ( frontIsDone[I] == 'Y' )
+       if ( (YI = p_mtx[I]) != NULL )
+          ... use YI's entries ...
+
+Neither side is synchronized.  A consumer that sees the flag but not
+the pointer skips a real update; one that sees the pointer but not the
+SubMtx entries behind it reads uninitialized memory and folds it into
+the solution.  ThreadSanitizer attributed the latter to
+real_updDenseColumns() and DVadd(), which is where the garbage was
+consumed rather than where it came from.
+
+Release-store the flag after the payload at all five publication sites
+(forward, diagonal and backward visits), and acquire-load it at the two
+consumption sites in computeForwardUpdates()/computeBackwardUpdates().
+---
+ FrontMtx/src/solveUtil.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/FrontMtx/src/solveUtil.c b/FrontMtx/src/solveUtil.c
+index fbf7184..8a39ca3 100644
+--- a/FrontMtx/src/solveUtil.c
++++ b/FrontMtx/src/solveUtil.c
+@@ -1,6 +1,7 @@
+ /*  solveUtil.c  */
+ 
+ #include "../FrontMtx.h"
++#include "../../Utilities/SPOOLESatomic.h"
+ #include "../../SubMtxList.h"
+ 
+ /*--------------------------------------------------------------------*/
+@@ -198,7 +199,7 @@ if ( (nJ = FrontMtx_frontSize(frontmtx, J)) == 0 ) {
+    -----------------------------------------------------
+ */
+    if ( owners == NULL || owners[J] == myid ) {
+-      frontIsDone[J] = 'Y'  ;
++      SPOOLES_STORE_RELEASE(&frontIsDone[J], 'Y') ;
+    }
+    status[J] = 'F' ;
+    return ;
+@@ -304,7 +305,7 @@ if ( updDone == 'Y' && aggDone == 'Y' ) {
+ */
+       p_agg[J]       = NULL ;
+       p_mtx[J]       = BJ   ;
+-      frontIsDone[J] = 'Y'  ;
++      SPOOLES_STORE_RELEASE(&frontIsDone[J], 'Y') ;
+    } else if ( BJ != NULL ) {
+ /*
+       --------------------------------------
+@@ -366,7 +367,7 @@ if ( owners == NULL || owners[J] == myid ) {
+       p_mtx[J] = NULL ;
+       p_agg[J] = BJ   ;
+    }
+-   frontIsDone[J] = 'Y' ;
++   SPOOLES_STORE_RELEASE(&frontIsDone[J], 'Y') ;
+ }
+ return ; }
+ 
+@@ -411,7 +412,7 @@ if ( (nJ = FrontMtx_frontSize(frontmtx, J)) == 0 ) {
+    -----------------------------------------------------
+ */
+    if ( owners == NULL || owners[J] == myid ) {
+-      frontIsDone[J] = 'Y'  ;
++      SPOOLES_STORE_RELEASE(&frontIsDone[J], 'Y') ;
+    }
+    status[J] = 'F' ;
+    return ;
+@@ -512,7 +513,7 @@ if ( updDone == 'Y' && aggDone == 'Y' ) {
+ */
+       p_agg[J]       = NULL ;
+       p_mtx[J]       = ZJ   ;
+-      frontIsDone[J] = 'Y'  ;
++      SPOOLES_STORE_RELEASE(&frontIsDone[J], 'Y') ;
+    } else if ( ZJ != NULL ) {
+ /*
+       --------------------------------------
+@@ -758,7 +759,7 @@ for ( ip = heads[J], heads[J] = NULL ;
+               I, frontIsDone[I], I, p_mtx[I]) ;
+       fflush(msgFile) ;
+    }
+-   if ( frontIsDone[I] == 'Y' ) {
++   if ( SPOOLES_LOAD_ACQUIRE(&frontIsDone[I]) == 'Y' ) {
+       if ( (YI = p_mtx[I]) != NULL ) {
+ /*
+          --------------------------------
+@@ -930,7 +931,7 @@ for ( ip = heads[J], heads[J] = NULL ;
+               "\n\n frontIsDone[%d] = %c", K, frontIsDone[K]) ;
+       fflush(msgFile) ;
+    }
+-   if ( frontIsDone[K] == 'Y' ) {
++   if ( SPOOLES_LOAD_ACQUIRE(&frontIsDone[K]) == 'Y' ) {
+       if ( (XK = p_mtx[K]) != NULL ) {
+ /*
+          --------------------------------

@@ -1,0 +1,58 @@
+From 2f6d8e1eda9e2669ebe52d3a661736050f29c3f3 Mon Sep 17 00:00:00 2001
+From: Jacob Oursland <jacob.oursland@gmail.com>
+Date: Mon, 7 Sep 2026 17:26:51 -0600
+Subject: [PATCH] MT: give each solve thread its own cpus[] vector
+
+FrontMtx_MT_solve() hands every SolveData the *same* caller-supplied
+cpus[] vector:
+
+    data->cpus = cpus ;
+
+and each worker then accumulates into it with cpus[i] += t2 - t1 at
+seven sites.  Concurrent read-modify-writes on a shared double: the
+last seven races ThreadSanitizer reports.
+
+The reduction afterwards cannot work either --
+
+    DVzero(8, cpus) ;
+    for ( myid = 0 ; myid < nthread ; myid++, data++ )
+       for ( ii = 0 ; ii < 8 ; ii++ )
+          cpus[ii] += data->cpus[ii] ;
+
+data->cpus *is* cpus, so DVzero() erases the measurements and the loop
+then sums the zeros into themselves.  The MT solve's cpu breakdown has
+always been reported as all zeros.
+
+FactorData already does this correctly, with an embedded double
+cpus[20] per thread that the master sums after the join.  Do the same
+here: embed double cpus[8] in SolveData, zero it per thread at setup,
+and leave the existing reduction, which now has something real to
+reduce.
+
+With this the MT factor and solve are ThreadSanitizer-clean.
+---
+ MT/src/solveMT.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/MT/src/solveMT.c b/MT/src/solveMT.c
+index c2fd58c..fe2fab1 100644
+--- a/MT/src/solveMT.c
++++ b/MT/src/solveMT.c
+@@ -78,7 +78,7 @@ struct _SolveData {
+    char            *lowerIsDone ;
+    char            *diagIsDone  ;
+    char            *upperIsDone ;
+-   double          *cpus        ;
++   double          cpus[8]      ;
+    int             msglvl       ;
+    FILE            *msgFile     ;
+ } ;
+@@ -176,7 +176,7 @@ for ( myid = 0, data = dataObjects ; myid < nthread ; myid++, data++ ) {
+    data->lowerIsDone  = lowerIsDone ;
+    data->diagIsDone   = diagIsDone  ;
+    data->upperIsDone  = upperIsDone ;
+-   data->cpus         = cpus        ;
++   DVzero(8, data->cpus) ;
+    data->msglvl       = msglvl      ;
+    if ( msglvl > 0 ) {
+       sprintf(buffer, "solve.res.%d", myid) ;

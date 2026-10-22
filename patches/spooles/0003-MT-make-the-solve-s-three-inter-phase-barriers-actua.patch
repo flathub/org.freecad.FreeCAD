@@ -1,0 +1,113 @@
+From d1176c4eb445a2b87dc6dea18418d9bd0c282529 Mon Sep 17 00:00:00 2001
+From: Jacob Oursland <jacob.oursland@gmail.com>
+Date: Mon, 7 Sep 2026 17:26:49 -0600
+Subject: [PATCH] MT: make the solve's three inter-phase barriers actually
+ synchronize
+
+FrontMtx_workerSolve() separates the forward solve, the diagonal solve
+and the backward solve with three hand-rolled barriers, each spinning
+on a plain char vector:
+
+    lowerIsDone[myid] = 'Y' ;
+    do {
+       everybodyDone = 1 ;
+       for ( iproc = 0 ; iproc < nproc ; iproc++ )
+          if ( lowerIsDone[iproc] != 'Y' ) { everybodyDone = 0 ; break ; }
+    } while ( everybodyDone == 0 ) ;
+
+There is no fence and no volatile.  Two consequences:
+
+  - No ordering.  A thread can see every flag set to 'Y' and still not
+    see the results the other threads wrote during the phase that just
+    ended.  The barrier separates the phases in program order only.
+    Since the whole point is that the backward solve reads what the
+    forward and diagonal solves produced, a violation corrupts the
+    solution wholesale rather than subtly.
+
+  - No compiler guarantee.  The flags are ordinary memory, so a
+    compiler is entitled to hoist the load out of the spin loop and
+    hang.  That has not been observed with gcc or clang here, but it is
+    not something to leave to luck in a spin loop.
+
+Release-store the flag on arrival, acquire-load it while waiting.  The
+reset of frontIsDone[] between the diagonal and backward phases is made
+explicit for the same reason.
+---
+ MT/src/solveMT.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/MT/src/solveMT.c b/MT/src/solveMT.c
+index 77d4620..c2fd58c 100644
+--- a/MT/src/solveMT.c
++++ b/MT/src/solveMT.c
+@@ -1,6 +1,7 @@
+ /*  solveMT.c  */
+ 
+ #include "../spoolesMT.h"
++#include "../../Utilities/SPOOLESatomic.h"
+ #include "../../Ideq.h"
+ #include "../../timings.h"
+ #include "../../SolveMap.h"
+@@ -497,7 +498,7 @@ if ( msglvl > 1 ) {
+    all processes wait here until all are done
+    ------------------------------------------
+ */
+-lowerIsDone[myid] = 'Y' ;
++SPOOLES_STORE_RELEASE(&lowerIsDone[myid], 'Y') ;
+ do {
+    if ( msglvl > 2 ) {
+       fprintf(msgFile, "\n\n 1. checking out lowerIsDone[] vector: ") ;
+@@ -509,7 +510,7 @@ do {
+          fprintf(msgFile, " %c", lowerIsDone[iproc]) ;
+          fflush(msgFile) ;
+       }
+-      if ( lowerIsDone[iproc] != 'Y' ) {
++      if ( SPOOLES_LOAD_ACQUIRE(&lowerIsDone[iproc]) != 'Y' ) {
+          everybodyDone = 0 ;
+          break ;
+       }
+@@ -530,7 +531,7 @@ for ( J = 0 ; J < nfront ; J++ ) {
+       set frontIsDone[J] to 'N' to be ready for the backward solve
+       ------------------------------------------------------------
+ */
+-      frontIsDone[J] = 'N' ;
++      SPOOLES_STORE_RELAXED(&frontIsDone[J], 'N') ;
+    }
+ }
+ MARKTIME(t2) ;
+@@ -540,7 +541,7 @@ cpus[3] += t2 - t1 ;
+    all processes wait here until all are done
+    ------------------------------------------
+ */
+-diagIsDone[myid] = 'Y' ;
++SPOOLES_STORE_RELEASE(&diagIsDone[myid], 'Y') ;
+ do {
+    if ( msglvl > 2 ) {
+       fprintf(msgFile, "\n\n 2. checking out diagIsDone[] vector: ") ;
+@@ -552,7 +553,7 @@ do {
+          fprintf(msgFile, " %c", diagIsDone[iproc]) ;
+          fflush(msgFile) ;
+       }
+-      if ( diagIsDone[iproc] != 'Y' ) {
++      if ( SPOOLES_LOAD_ACQUIRE(&diagIsDone[iproc]) != 'Y' ) {
+          everybodyDone = 0 ;
+          break ;
+       }
+@@ -650,7 +651,7 @@ cpus[4] += t2 - t1 ;
+    all processes wait here until all are done
+    ------------------------------------------
+ */
+-upperIsDone[myid] = 'Y' ;
++SPOOLES_STORE_RELEASE(&upperIsDone[myid], 'Y') ;
+ do {
+    if ( msglvl > 2 ) {
+       fprintf(msgFile, "\n\n 2. checking out upperIsDone[] vector: ") ;
+@@ -662,7 +663,7 @@ do {
+          fprintf(msgFile, " %c", upperIsDone[iproc]) ;
+          fflush(msgFile) ;
+       }
+-      if ( upperIsDone[iproc] != 'Y' ) {
++      if ( SPOOLES_LOAD_ACQUIRE(&upperIsDone[iproc]) != 'Y' ) {
+          everybodyDone = 0 ;
+          break ;
+       }

@@ -1,0 +1,125 @@
+From 4598b5f4fda04c40e64faebd979eb1037b275ef6 Mon Sep 17 00:00:00 2001
+From: Jacob Oursland <jacob.oursland@gmail.com>
+Date: Mon, 7 Sep 2026 17:26:50 -0600
+Subject: [PATCH] MT: stop losing updates on the factor's entry counters
+
+FrontMtx_storeFront() accumulates frontmtx->nentD, nentL and nentU with
+plain read-modify-writes at ten sites, and every factorization thread
+runs it concurrently for the fronts it owns.  ThreadSanitizer reported
+three of these directly.
+
+The counters feed the operation-count and storage statistics only --
+FrontMtx_nentD()/nentL()/nentU() and the driver's nops estimate -- so
+the damage is an understated report, not a wrong answer.  They are
+still a lost-update race and still undefined behaviour, and they are
+the last thing standing between the factorization and a clean
+ThreadSanitizer run, so make them relaxed atomic fetch-adds.  Relaxed
+is sufficient: nothing is published through these counters, and no
+ordering is required, so the cost is a single LDADD on aarch64 and
+LOCK XADD on x86, ten times per front.
+---
+ FrontMtx/src/storeFront.c | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/FrontMtx/src/storeFront.c b/FrontMtx/src/storeFront.c
+index 2465a40..0925d6e 100644
+--- a/FrontMtx/src/storeFront.c
++++ b/FrontMtx/src/storeFront.c
+@@ -1,6 +1,7 @@
+ /*  storeFront.c  */
+ 
+ #include "../FrontMtx.h"
++#include "../../Utilities/SPOOLESatomic.h"
+ 
+ /*--------------------------------------------------------------------*/
+ /*
+@@ -137,7 +138,7 @@ if ( pivotsizes != NULL ) {
+       SubMtx_writeForHumanEye(mtx, msgFile) ;
+       fflush(msgFile) ;
+    }
+-   frontmtx->nentD += nent ;
++   SPOOLES_FETCH_ADD_RELAXED(&frontmtx->nentD, nent) ;
+ } else {
+ /*
+    ---------------
+@@ -154,7 +155,7 @@ if ( pivotsizes != NULL ) {
+    SubMtx_diagonalInfo(mtx, &nent, &entries) ;
+    Chv_copyEntriesToVector(frontJ, npivot, pivotsizes, nent, entries, 
+                            CHV_DIAGONAL, CHV_BY_ROWS) ;
+-   frontmtx->nentD += nD ;
++   SPOOLES_FETCH_ADD_RELAXED(&frontmtx->nentD, nD) ;
+    if ( msglvl > 2 ) {
+       fprintf(msgFile, "\n\n entries in SubMtx") ;
+       DVfprintf(msgFile, nent, entries) ;
+@@ -219,7 +220,7 @@ if ( FRONTMTX_IS_DENSE_FRONTS(frontmtx) ) {
+       SubMtx_rowIndices(mtx, &nrow, &rowind) ;
+       IVcopy(nrow, rowind, rowindJ) ;
+       if ( FRONTMTX_IS_PIVOTING(frontmtx) ) {
+-         frontmtx->nentU += nent ;
++         SPOOLES_FETCH_ADD_RELAXED(&frontmtx->nentU, nent) ;
+       }
+       if ( msglvl > 2 ) {
+          fprintf(msgFile, "\n\n UJJ matrix") ;
+@@ -257,7 +258,7 @@ if ( FRONTMTX_IS_DENSE_FRONTS(frontmtx) ) {
+       IVcopy(ncol, colind, colindJ) ;
+       SubMtx_rowIndices(mtx, &nrow, &rowind) ;
+       IVcopy(nrow, rowind, rowindJ) ;
+-      frontmtx->nentU += nent ;
++      SPOOLES_FETCH_ADD_RELAXED(&frontmtx->nentU, nent) ;
+       if ( msglvl > 2 ) {
+          fprintf(msgFile, "\n\n UJJ matrix") ;
+          SubMtx_writeForHumanEye(mtx, msgFile) ;
+@@ -295,7 +296,7 @@ if ( FRONTMTX_IS_DENSE_FRONTS(frontmtx) ) {
+       SubMtx_rowIndices(mtx, &nrow, &rowind) ;
+       IVcopy(nrow, rowind, rowindJ) ;
+       if ( FRONTMTX_IS_PIVOTING(frontmtx) ) {
+-         frontmtx->nentU += nent ;
++         SPOOLES_FETCH_ADD_RELAXED(&frontmtx->nentU, nent) ;
+       }
+       if ( msglvl > 2 ) {
+          fprintf(msgFile, "\n\n UJJN matrix") ;
+@@ -333,7 +334,7 @@ if ( FRONTMTX_IS_DENSE_FRONTS(frontmtx) ) {
+       IVcopy(ncol, colind, colindJ + nD) ;
+       SubMtx_rowIndices(mtx, &nrow, &rowind) ;
+       IVcopy(nrow, rowind, rowindJ) ;
+-      frontmtx->nentU += nent ;
++      SPOOLES_FETCH_ADD_RELAXED(&frontmtx->nentU, nent) ;
+       if ( msglvl > 2 ) {
+          fprintf(msgFile, "\n\n UJJN matrix") ;
+          SubMtx_writeForHumanEye(mtx, msgFile) ;
+@@ -378,7 +379,7 @@ if ( FRONTMTX_IS_NONSYMMETRIC(frontmtx) ) {
+          SubMtx_rowIndices(mtx, &nrow, &rowind) ;
+          IVcopy(nrow, rowind, rowindJ) ;
+          if ( FRONTMTX_IS_PIVOTING(frontmtx) ) {
+-            frontmtx->nentL += nent ;
++            SPOOLES_FETCH_ADD_RELAXED(&frontmtx->nentL, nent) ;
+          }
+          if ( msglvl > 2 ) {
+             fprintf(msgFile, "\n\n LJJ matrix") ;
+@@ -416,7 +417,7 @@ if ( FRONTMTX_IS_NONSYMMETRIC(frontmtx) ) {
+          IVcopy(ncol, colind, colindJ) ;
+          SubMtx_rowIndices(mtx, &nrow, &rowind) ;
+          IVcopy(nrow, rowind, rowindJ) ;
+-         frontmtx->nentL += nent ;
++         SPOOLES_FETCH_ADD_RELAXED(&frontmtx->nentL, nent) ;
+          if ( msglvl > 2 ) {
+             fprintf(msgFile, "\n\n LJJ matrix") ;
+             SubMtx_writeForHumanEye(mtx, msgFile) ;
+@@ -454,7 +455,7 @@ if ( FRONTMTX_IS_NONSYMMETRIC(frontmtx) ) {
+          SubMtx_rowIndices(mtx, &nrow, &rowind) ;
+          IVcopy(nrow, rowind, rowindJ + nD) ;
+          if ( FRONTMTX_IS_PIVOTING(frontmtx) ) {
+-            frontmtx->nentL += nent ;
++            SPOOLES_FETCH_ADD_RELAXED(&frontmtx->nentL, nent) ;
+          }
+          if ( msglvl > 2 ) {
+             fprintf(msgFile, "\n\n LNJ matrix") ;
+@@ -492,7 +493,7 @@ if ( FRONTMTX_IS_NONSYMMETRIC(frontmtx) ) {
+          IVcopy(ncol, colind, colindJ) ;
+          SubMtx_rowIndices(mtx, &nrow, &rowind) ;
+          IVcopy(nrow, rowind, rowindJ + nD) ;
+-         frontmtx->nentL += nent ;
++         SPOOLES_FETCH_ADD_RELAXED(&frontmtx->nentL, nent) ;
+          if ( msglvl > 2 ) {
+             fprintf(msgFile, "\n\n LNJ matrix") ;
+             SubMtx_writeForHumanEye(mtx, msgFile) ;
