@@ -507,7 +507,15 @@ modules:
         mirror-urls:
           - http://www.netlib.org/linalg/spooles/spooles.2.2.tgz # can be slow
       - type: patch
-        path: patches/spooles-fix-compilation.patch
+        paths:
+          - patches/spooles-fix-compilation.patch
+          # patches by @oursland at conda-forge: https://github.com/conda-forge/spooles-feedstock/pull/12
+          - patches/spooles/0001-MT-add-acquire-release-primitives-and-order-the-work.patch
+          - patches/spooles/0002-MT-order-the-frontIsDone-p_mtx-publication-in-the-so.patch
+          - patches/spooles/0003-MT-make-the-solve-s-three-inter-phase-barriers-actua.patch
+          - patches/spooles/0004-MT-stop-losing-updates-on-the-factor-s-entry-counter.patch
+          - patches/spooles/0005-MT-give-each-solve-thread-its-own-cpus-vector.patch
+          - patches/spooles/0006-I2Ohash-fix-int-overflow-in-the-bucket-index.patch
 
   - name: calculix-ccx
     buildsystem: simple

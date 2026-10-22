@@ -1,0 +1,111 @@
+From: Jacob Oursland <jacob.oursland@gmail.com>
+Subject: [PATCH] I2Ohash: fix int overflow in the bucket index
+
+I2Ohash_insert(), I2Ohash_locate() and I2Ohash_remove() each compute the
+bucket for a (key1,key2) pair as
+
+    loc1 = (key1 + 1) % hashtable->nlist ;
+    loc2 = (key2 + 1) % hashtable->nlist ;
+    loc  = (loc1*loc2) % hashtable->nlist ;
+
+loc1*loc2 is a signed int multiplication.  Both factors can approach
+nlist, so the product overflows once nlist > 46341 -- undefined
+behaviour, and in practice a negative index into heads[].
+
+FrontMtx/src/postProcess.c:127 sizes that table with
+
+    I2Ohash_init(frontmtx->upperhash, nfront, nfront, nfront)
+
+so any factorization with more than ~46k fronts is exposed.  The
+reported symptom is a segfault in I2Ohash_insert() reached from
+FrontMtx_splitUpperMatrices().
+
+Widen the product to long int and cast back.  I2Ohash_measure() and
+I2Ohash_writeStats() accumulate count*count the same way; make those
+products double.
+
+Debian carries this as debian/patches/I2Ohash-64bit.patch and FreeBSD
+ports as files/patch-I2Ohash-large-input.  conda-forge did not have it.
+
+--- a/I2Ohash/src/util.c
++++ b/I2Ohash/src/util.c
+@@ -20,6 +20,7 @@
+    void      *value 
+ ) {
+ int   loc, loc1, loc2 ;
++long int loc3 ;
+ I2OP  *i2op, *j2op, *prev ;
+ 
+ if ( hashtable == NULL ) {
+@@ -39,9 +40,10 @@
+ */
+ loc1 = (key1 + 1) % hashtable->nlist ;
+ loc2 = (key2 + 1) % hashtable->nlist ;
+-loc  = (loc1*loc2) % hashtable->nlist ;
++loc3  = (long int)loc1*(long int)loc2 % hashtable->nlist ;
++loc =(int) loc3;
+ #if MYDEBUG > 0
+-fprintf(stdout, "\n loc1 = %d, loc2 = %d, loc3 = %d", loc1, loc2, loc) ;
++fprintf(stdout, "\n loc1 = %d, loc2 = %d, loc3 = %ld, loc = %d", loc1, loc2, loc3, loc) ;
+ fflush(stdout) ;
+ #endif
+ /*
+@@ -139,6 +141,7 @@
+    void      **pvalue 
+ ) {
+ int   loc, loc1, loc2, rc ;
++long int loc3 ;
+ I2OP   *i2op ;
+ /*
+    ---------------
+@@ -158,9 +161,10 @@
+ #endif
+ loc1 = (key1 + 1) % hashtable->nlist ;
+ loc2 = (key2 + 1) % hashtable->nlist ;
+-loc  = (loc1*loc2) % hashtable->nlist ;
++loc3  = (long int)loc1*(long int)loc2 % hashtable->nlist ;
++loc  = (int) loc3 ;
+ #if MYDEBUG > 0
+-fprintf(stdout, "\n loc1 = %d, loc2 = %d, loc3 = %d", loc1, loc2, loc) ;
++fprintf(stdout, "\n loc1 = %d, loc2 = %d, loc3 = %ld, loc = %d", loc1, loc2, loc3, loc) ;
+ fflush(stdout) ;
+ #endif
+ /*
+@@ -215,6 +219,7 @@
+    void      **pvalue 
+ ) {
+ int   loc, loc1, loc2, rc ;
++long int loc3 ;
+ I2OP   *i2op, *prev ;
+ /*
+    ---------------
+@@ -229,7 +234,8 @@
+ }
+ loc1 = (key1 + 1) % hashtable->nlist ;
+ loc2 = (key2 + 1) % hashtable->nlist ;
+-loc  = (loc1*loc2) % hashtable->nlist ;
++loc3  = (long int)loc1*(long int)loc2 % hashtable->nlist ;
++loc  = (int) loc3 ;
+ /*
+    ---------------------------------------------------
+    find the location of the first (key1,key2,*) triple
+@@ -294,7 +300,7 @@
+          count++ ;
+          i2op = i2op->next ;
+       }
+-      measure += count*count ;
++      measure += (double)count*(double)count ;
+    }
+ }
+ measure = sqrt(measure) ;
+--- a/I2Ohash/src/IO.c
++++ b/I2Ohash/src/IO.c
+@@ -41,7 +41,7 @@
+                  i2op->value0, i2op->value1, i2op->value2) ;
+          i2op = i2op->next ;
+       }
+-      measure += count*count ;
++      measure += (double)count*(double)count ;
+       nfull++ ;
+    }
+ }
