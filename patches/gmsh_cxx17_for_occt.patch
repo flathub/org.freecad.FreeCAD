@@ -1,0 +1,16 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index aa4e821..4ef1052 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -16,8 +16,9 @@ endif()
+ 
+ project(gmsh CXX C)
+ 
+-# require C++14 and request C99
+-set(CMAKE_CXX_STANDARD 14)
++# require C++17 (OCCT >= 8.0.0 headers use std::optional/std::in_place etc.)
++# and request C99
++set(CMAKE_CXX_STANDARD 17)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ set(CMAKE_C_STANDARD 99)
+ 
