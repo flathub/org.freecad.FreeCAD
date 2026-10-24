@@ -1,0 +1,194 @@
+diff --git a/src/geo/GModelIO_OCC.cpp b/src/geo/GModelIO_OCC.cpp
+index 48029cc..9fd335e 100644
+--- a/src/geo/GModelIO_OCC.cpp
++++ b/src/geo/GModelIO_OCC.cpp
+@@ -91,6 +91,9 @@
+ #include <STEPControl_Writer.hxx>
+ #include <StepData_StepModel.hxx>
+ #include <Interface_EntityIterator.hxx>
++// OCCT 8.0.0 dropped many transitive includes; pull these in explicitly (they
++// remain available, as deprecated typedef shims, in 8.0.0).
++#include <Interface_HArray1OfHAsciiString.hxx>
+ #include <HeaderSection_FileName.hxx>
+ #include <HeaderSection_FileDescription.hxx>
+ #include <HeaderSection_FileSchema.hxx>
+@@ -113,9 +116,18 @@
+ #include <TColgp_HArray1OfPnt.hxx>
+ #include <TopExp.hxx>
+ #include <TopExp_Explorer.hxx>
++#include <TopTools_MapOfShape.hxx>
++#if OCC_VERSION_HEX >= 0x080000
++// OCCT 8.0.0 removed the generated collection-iterator typedef headers; the
++// iterator type is now the collection's nested ::Iterator (see typedefs below).
++#include <TopTools_DataMapOfIntegerShape.hxx>
++#include <TopTools_DataMapOfShapeInteger.hxx>
++#include <TopTools_ListOfShape.hxx>
++#else
+ #include <TopTools_DataMapIteratorOfDataMapOfIntegerShape.hxx>
+ #include <TopTools_DataMapIteratorOfDataMapOfShapeInteger.hxx>
+ #include <TopTools_ListIteratorOfListOfShape.hxx>
++#endif
+ #include <TopoDS.hxx>
+ #include <gce_MakeCirc.hxx>
+ #include <gce_MakeElips.hxx>
+@@ -127,6 +139,15 @@
+ #error "Gmsh requires OpenCASCADE >= 6.9"
+ #endif
+ 
++#if OCC_VERSION_HEX >= 0x080000
++// Provide the names of the typedef iterator classes that OCCT 8.0.0 removed.
++typedef TopTools_DataMapOfIntegerShape::Iterator
++  TopTools_DataMapIteratorOfDataMapOfIntegerShape;
++typedef TopTools_DataMapOfShapeInteger::Iterator
++  TopTools_DataMapIteratorOfDataMapOfShapeInteger;
++typedef TopTools_ListOfShape::Iterator TopTools_ListIteratorOfListOfShape;
++#endif
++
+ #if OCC_VERSION_HEX > 0x070100
+ #include <BOPAlgo_Alerts.hxx>
+ #endif
+@@ -151,6 +172,7 @@
+ #include <Quantity_Color.hxx>
+ #include <STEPCAFControl_Reader.hxx>
+ #include <TDF_ChildIterator.hxx>
++#include <TDF_LabelSequence.hxx>
+ #include <TDF_Tool.hxx>
+ #include <TDataStd_Name.hxx>
+ #include <TDocStd_Document.hxx>
+@@ -4522,20 +4544,20 @@ static void setTargetUnit(const std::string &unit)
+     Msg::Error("Could not set OpenCASCADE target unit '%s'", unit.c_str());
+ }
+ 
+-static Handle_Interface_HArray1OfHAsciiString strToOccStrArray(std::string str)
++static Handle(Interface_HArray1OfHAsciiString) strToOccStrArray(std::string str)
+ {
+-  Handle_Interface_HArray1OfHAsciiString array =
++  Handle(Interface_HArray1OfHAsciiString) array =
+     new Interface_HArray1OfHAsciiString(1, 1);
+   array->SetValue(1, new TCollection_HAsciiString(str.c_str()));
+   return array;
+ }
+ 
+-static Handle_TCollection_HAsciiString strToOccStr(std::string str)
++static Handle(TCollection_HAsciiString) strToOccStr(std::string str)
+ {
+   return new TCollection_HAsciiString(str.c_str());
+ }
+ 
+-static void setOCCStepHeaderFileName(Handle_HeaderSection_FileName &hfname)
++static void setOCCStepHeaderFileName(Handle(HeaderSection_FileName) &hfname)
+ {
+   if(!CTX::instance()->geom.occStepModelName.empty()) {
+     hfname->SetName(strToOccStr(CTX::instance()->geom.occStepModelName));
+@@ -4565,7 +4587,7 @@ static void setOCCStepHeaderFileName(Handle_HeaderSection_FileName &hfname)
+ }
+ 
+ static void
+-setOCCSTEPHeaderDescription(Handle_HeaderSection_FileDescription &hdesc)
++setOCCSTEPHeaderDescription(Handle(HeaderSection_FileDescription) &hdesc)
+ {
+   if(!CTX::instance()->geom.occStepDescription.empty()) {
+     hdesc->SetDescription(
+@@ -4577,7 +4599,7 @@ setOCCSTEPHeaderDescription(Handle_HeaderSection_FileDescription &hdesc)
+   }
+ }
+ 
+-static void setOCCSTEPHeaderSchema(Handle_HeaderSection_FileSchema &hschema,
++static void setOCCSTEPHeaderSchema(Handle(HeaderSection_FileSchema) &hschema,
+                                    const Interface_EntityIterator &header)
+ {
+   if(!CTX::instance()->geom.occStepSchemaIdentifier.empty()) {
+@@ -4586,9 +4608,9 @@ static void setOCCSTEPHeaderSchema(Handle_HeaderSection_FileSchema &hschema,
+   }
+   else {
+     for(auto It = header; It.More(); It.Next()) {
+-      const Handle_Standard_Transient &entity = It.Value();
++      const Handle(Standard_Transient) &entity = It.Value();
+       if(entity->IsKind(STANDARD_TYPE(HeaderSection_FileSchema))) {
+-        hschema = Handle_HeaderSection_FileSchema::DownCast(entity);
++        hschema = Handle(HeaderSection_FileSchema)::DownCast(entity);
+         break;
+       }
+     }
+@@ -4597,12 +4619,12 @@ static void setOCCSTEPHeaderSchema(Handle_HeaderSection_FileSchema &hschema,
+ 
+ static void setOCCSTEPHeader(STEPControl_Writer &writer)
+ {
+-  Handle_StepData_StepModel model = writer.Model().get();
++  Handle(StepData_StepModel) model = writer.Model().get();
+   APIHeaderSection_MakeHeader header = APIHeaderSection_MakeHeader();
+ 
+-  Handle_HeaderSection_FileName hfname = header.FnValue();
+-  Handle_HeaderSection_FileDescription hdesc = header.FdValue();
+-  Handle_HeaderSection_FileSchema hschema = header.FsValue();
++  Handle(HeaderSection_FileName) hfname = header.FnValue();
++  Handle(HeaderSection_FileDescription) hdesc = header.FdValue();
++  Handle(HeaderSection_FileSchema) hschema = header.FsValue();
+ 
+   setOCCStepHeaderFileName(hfname);
+   setOCCSTEPHeaderDescription(hdesc);
+@@ -4631,10 +4653,10 @@ static void getColorRGB(const Quantity_Color &col, double &r, double &g,
+ }
+ 
+ static void setShapeAttributes(OCCAttributesRTree *attributes,
+-                               const Handle_XCAFDoc_ShapeTool &shapeTool,
+-                               const Handle_XCAFDoc_ColorTool &colorTool,
+-                               const Handle_XCAFDoc_MaterialTool &materialTool,
+-                               const Handle_XCAFDoc_LayerTool &layerTool,
++                               const Handle(XCAFDoc_ShapeTool) &shapeTool,
++                               const Handle(XCAFDoc_ColorTool) &colorTool,
++                               const Handle(XCAFDoc_MaterialTool) &materialTool,
++                               const Handle(XCAFDoc_LayerTool) &layerTool,
+                                const TDF_Label &label,
+                                const TopLoc_Location &loc,
+                                const std::string &pathName, bool isRef)
+@@ -4778,10 +4800,10 @@ void readAttributes(OCCAttributesRTree *attributes, T &reader,
+                     const std::string &format)
+ {
+   // dummy XCAF Application to handle the STEP XCAF Document
+-  static Handle_XCAFApp_Application dummy_app =
++  static Handle(XCAFApp_Application) dummy_app =
+     XCAFApp_Application::GetApplication();
+   // XCAF Document to contain the STEP/IGES file itself
+-  Handle_TDocStd_Document doc;
++  Handle(TDocStd_Document) doc;
+   // check if a file is already open under this handle, if so, close it to
+   // prevent segfaults when trying to create a new document
+   if(dummy_app->NbDocuments() > 0) {
+@@ -4792,13 +4814,13 @@ void readAttributes(OCCAttributesRTree *attributes, T &reader,
+   // transfer STEP/IGES into the document, and get the main label
+   reader.Transfer(doc);
+   TDF_Label mainLabel = doc->Main();
+-  Handle_XCAFDoc_ShapeTool shapeTool =
++  Handle(XCAFDoc_ShapeTool) shapeTool =
+     XCAFDoc_DocumentTool::ShapeTool(mainLabel);
+-  Handle_XCAFDoc_ColorTool colorTool =
++  Handle(XCAFDoc_ColorTool) colorTool =
+     XCAFDoc_DocumentTool::ColorTool(mainLabel);
+-  Handle_XCAFDoc_MaterialTool materialTool =
++  Handle(XCAFDoc_MaterialTool) materialTool =
+     XCAFDoc_DocumentTool::MaterialTool(mainLabel);
+-  Handle_XCAFDoc_LayerTool layerTool = XCAFDoc_DocumentTool::LayerTool(mainLabel);
++  Handle(XCAFDoc_LayerTool) layerTool = XCAFDoc_DocumentTool::LayerTool(mainLabel);
+   // traverse the labels recursively to set attributes on shapes
+   setShapeAttributes(attributes, shapeTool, colorTool, materialTool, layerTool, mainLabel,
+                      TopLoc_Location(), "", false);
+diff --git a/src/geo/OCCEdge.cpp b/src/geo/OCCEdge.cpp
+index 28ca9f7..c441030 100644
+--- a/src/geo/OCCEdge.cpp
++++ b/src/geo/OCCEdge.cpp
+@@ -16,7 +16,14 @@
+ 
+ #include <Standard_Version.hxx>
+ #include <TopoDS.hxx>
++#if OCC_VERSION_HEX >= 0x080000
++// OCCT 8.0.0 dropped the Geom2dLProp package; Geom2dLProp_CLProps2d is now
++// GeomLProp_CLProps2d, a template alias declared in GeomLProp_CLProps.hxx.
++#include <GeomLProp_CLProps.hxx>
++typedef GeomLProp_CLProps2d Geom2dLProp_CLProps2d;
++#else
+ #include <Geom2dLProp_CLProps2d.hxx>
++#endif
+ #include <Geom_BezierCurve.hxx>
+ #include <Geom_OffsetCurve.hxx>
+ #include <Geom_Ellipse.hxx>

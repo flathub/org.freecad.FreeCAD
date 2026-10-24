@@ -541,8 +541,14 @@ modules:
       - /share/doc
     sources:
       - type: archive
-        url: https://gmsh.info/src/gmsh-4.15.0-source.tgz
-        sha256: abb2632715bd7d0130ded7144fd6263635cd7dea883b8df61ba4da58ce6a1dfe
+        url: https://gmsh.info/src/gmsh-4.15.2-source.tgz
+        sha256: be3f66f225d27ba9fa014f07e83169285da8a051b0e8ab7103d88066b39bdd3e
+      - type: patch
+        paths:
+          # from https://github.com/conda-forge/gmsh-feedstock/commit/78bc4b5127988fc188aef9c8e02b4d24088fb24f
+          - patches/gmsh_occt800_api_compat.patch
+          # from https://github.com/conda-forge/gmsh-feedstock/commit/583fb2fe39684d746c7634b17e3750ac0e9d7aa2
+          - patches/gmsh_cxx17_for_occt.patch
 
   - name: yaml-cpp
     buildsystem: cmake-ninja
