@@ -1,0 +1,23 @@
+diff --git a/ccx_2.23/src/nonlingeo.c b/ccx_2.23/src/nonlingeo.c
+index 35b3617..846794c 100644
+--- a/ccx_2.23/src/nonlingeo.c
++++ b/ccx_2.23/src/nonlingeo.c
+@@ -979,7 +979,8 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
+     MNEW(fn,double,mt**nk);
+     NNEW(stx,double,6*mi[0]**ne);
+       
+-    if((*iexpl<=1)||(*mortar==-1)){intscheme=1;}
++    //      
++    //    if((*iexpl<=1)||(*mortar==-1)){intscheme=1;}
+       
+     if(ne1d2d==1)NNEW(inum,ITG,*nk);
+     results(co,nk,kon,ipkon,lakon,ne,vold,stn,inum,stx,
+@@ -1014,6 +1015,8 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
+       time=0.;
+       dtime=0.;
+     }
++    
++    if((*iexpl<=1)||(*mortar==-1)){intscheme=1;}
+       
+     if(*iexpl>1){
+ 

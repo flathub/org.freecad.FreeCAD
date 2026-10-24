@@ -1,0 +1,267 @@
+# Reject malformed fluid network input
+#
+#   - fluidsections: reject *FLUID SECTION without ELSET parameter
+#   - fluidsections: reject elements of the set that are not defined
+#   - noelsets: reject *NSET/*ELSET without a set name
+#   - preinitialnet, postinitialnet: skip mass flow propagation at nodes with one network element
+#   - flowoutput: do not use node 0 for the liquid temperature at an outlet
+#   - checkinputvaluesnet: check that branch elements are network elements
+#   - initialchannel: reject channel elements not reached from a sluice gate or weir
+#
+# Found by fuzzing ccx with malformed variants of 518 input decks under
+# AddressSanitizer, and by review of the code around each crash.
+
+diff --git a/ccx_2.23/src/calinput.f b/ccx_2.23/src/calinput.f
+index aeebb1b..e7b74d1 100644
+--- a/ccx_2.23/src/calinput.f
++++ b/ccx_2.23/src/calinput.f
+@@ -726,7 +726,7 @@ c
+         call fluidsections(inpc,textpart,set,istartset,iendset,
+      &       ialset,nset,ielmat,matname,nmat,irstrt,istep,istat,n,
+      &       iline,ipol,inl,ipoinp,inp,lakon,ielprop,nprop,
+-     &       nprop_,prop,ipoinpc,mi,ier)
++     &       nprop_,prop,ipoinpc,mi,ier,ne)
+ !     
+       elseif(textpart(1)(1:10).eq.'*FREQUENCY') then
+         call frequencys(inpc,textpart,nmethod,
+diff --git a/ccx_2.23/src/checkinputvaluesnet.f b/ccx_2.23/src/checkinputvaluesnet.f
+index 0d5a764..6716b77 100644
+--- a/ccx_2.23/src/checkinputvaluesnet.f
++++ b/ccx_2.23/src/checkinputvaluesnet.f
+@@ -34,7 +34,7 @@
+ !     
+       character*8 lakon(*)
+ !     
+-      integer ieg(*),nflow,i,ielprop(*),index,nelem
++      integer ieg(*),nflow,i,ielprop(*),index,nelem,k,nelem1,id
+ !     
+       real*8 prop(*)
+ !     
+@@ -43,6 +43,29 @@
+         index=ielprop(nelem)
+         if(index.lt.0) cycle
+ !     
++!     the three elements of a branch must be network elements
++!     (ieg is sorted in increasing order)
++!     
++        if((lakon(nelem)(2:5).eq.'REBR').or.
++     &       (lakon(nelem)(2:5).eq.'LPBR')) then
++          do k=1,3
++            if((prop(index+k).ge.1.d0).and.
++     &           (prop(index+k).le.ieg(nflow))) then
++              nelem1=nint(prop(index+k))
++              call nident(ieg,nelem1,nflow,id)
++              if(id.gt.0) then
++                if(ieg(id).eq.nelem1) cycle
++              endif
++            endif
++            write(*,*) '*ERROR in checkinputvaluesnet:'
++            write(*,*) '       trying to define a branch '
++            write(*,*) '       element ',prop(index+k),
++     &           ' is no network element'
++            write(*,*) '       element number: ',nelem
++            call exit(201)
++          enddo
++        endif
++!     
+ !     modifying the prop array (formerly done in fluidsections.f)
+ !     
+         if((lakon(nelem)(2:8).eq.'REBRJI2').or.
+diff --git a/ccx_2.23/src/flowoutput.f b/ccx_2.23/src/flowoutput.f
+index 11fe32f..6067975 100644
+--- a/ccx_2.23/src/flowoutput.f
++++ b/ccx_2.23/src/flowoutput.f
+@@ -448,6 +448,8 @@ c      write(*,*) 'nenet= ',nenet
+ !     
+             if((xflow.gt.0).and.(node1.ne.0)) then
+               gastemp=v(3,node1)
++            elseif(node2.eq.0) then
++              gastemp=v(3,node1)
+             else
+               gastemp=v(3,node2)
+             endif
+diff --git a/ccx_2.23/src/fluidsections.f b/ccx_2.23/src/fluidsections.f
+index b7b7cea..584148d 100644
+--- a/ccx_2.23/src/fluidsections.f
++++ b/ccx_2.23/src/fluidsections.f
+@@ -20,7 +20,7 @@
+      &     ialset,nset,ielmat,matname,nmat,
+      &     irstrt,istep,istat,n,iline,ipol,
+      &     inl,ipoinp,inp,lakon,ielprop,nprop,nprop_,prop,
+-     &     ipoinpc,mi,ier)
++     &     ipoinpc,mi,ier,ne)
+ !     
+ !     reading the input deck: *FLUID SECTION
+ !     
+@@ -39,7 +39,7 @@
+      &     ielmat(mi(3),*),irstrt(*),nset,nmat,ndprop,npropstart,id,
+      &     istep,istat,n,key,i,j,k,imaterial,ipos,lprop,ipoinpc(0:*),
+      &     iline,ipol,inl,ipoinp(2,*),inp(3,*),ielprop(*),nprop,nprop_,
+-     &     noil _mat,npu,nfix,iset,ier
++     &     noil _mat,npu,nfix,iset,ier,ne
+ !     
+       real*8 prop(*)
+ 
+@@ -57,6 +57,7 @@
+ !     
+       typename='
+      &'
++      ipos=0
+ !     
+       do i=2,n
+         if(textpart(i)(1:9).eq.'MATERIAL=') then
+@@ -532,6 +533,14 @@ C     ndprop=20
+         return
+       endif
+       imaterial=i
++!     
++      if(ipos.eq.0) then
++        write(*,*) '*ERROR reading *FLUID SECTION: no ELSET',
++     &       ' parameter was specified'
++        call inputerror(inpc,ipoinpc,iline,
++     &       "*FLUID SECTION%",ier)
++        return
++      endif
+ !     
+ c     do i=1,nset
+ c     if(set(i).eq.elset) exit
+@@ -819,6 +828,12 @@ c     enddo
+ !     
+       do j=istartset(iset),iendset(iset)
+         if(ialset(j).gt.0) then
++          if(ialset(j).gt.ne) then
++            write(*,*) '*ERROR reading *FLUID SECTION: element ',
++     &           ialset(j),' is not defined'
++            ier=1
++            return
++          endif
+           if(lakon(ialset(j))(1:1).ne.'D') then
+             write(*,*) '*ERROR reading *FLUID SECTION: element ',
+      &           ialset(j),' is no fluid element.'
+@@ -881,6 +896,12 @@ c     enddo
+           do
+             k=k-ialset(j)
+             if(k.ge.ialset(j-1)) exit
++            if(k.gt.ne) then
++              write(*,*) '*ERROR reading *FLUID SECTION: element ',
++     &             k,' is not defined'
++              ier=1
++              return
++            endif
+             if(lakon(k)(1:1).ne.'D') then
+               write(*,*) '*ERROR reading *FLUID SECTION: element ',
+      &             k,' is no fluid element.'
+diff --git a/ccx_2.23/src/initialchannel.f b/ccx_2.23/src/initialchannel.f
+index acf1506..b17a4fb 100644
+--- a/ccx_2.23/src/initialchannel.f
++++ b/ccx_2.23/src/initialchannel.f
+@@ -543,6 +543,22 @@
+         enddo loop2
+       enddo loop1
+ !
++!     all channel elements must have been reached from a
++!     SLUICE GATE or WEIR element
++!
++      do i=1,nflow
++        nelem=ieg(i)
++        if(lakon(nelem)(2:5).ne.'LICH') cycle
++        if(lakon(nelem)(6:7).eq.'IO') cycle
++        if(itreated(i).ne.1) then
++          write(*,*) '*ERROR in initialchannel: channel element',nelem
++          write(*,*) '       cannot be reached from a SLUICE GATE'
++          write(*,*) '       or WEIR element'
++          write(*,*)
++          call exit(201)
++        endif
++      enddo
++!
+ c      i=1
+ c      if(i.eq.1) return
+ !     
+diff --git a/ccx_2.23/src/noelsets.f b/ccx_2.23/src/noelsets.f
+index 23f310c..a8babf8 100644
+--- a/ccx_2.23/src/noelsets.f
++++ b/ccx_2.23/src/noelsets.f
+@@ -44,6 +44,7 @@
+       endif
+ !     
+       igen=.false.
++      ipos=0
+ !     
+ !     reading the name of the set
+ !     
+@@ -102,6 +103,14 @@
+           endif
+         enddo
+       endif
++!     
++      if(ipos.eq.0) then
++        write(*,*) '*ERROR reading *NSET/ELSET: no set name',
++     &       ' (NSET= or ELSET= parameter) was specified'
++        call inputerror(inpc,ipoinpc,iline,
++     &       "*NSET or *ELSET%",ier)
++        return
++      endif
+ !     
+ !     check whether new set or old set 
+ !     
+diff --git a/ccx_2.23/src/postinitialnet.f b/ccx_2.23/src/postinitialnet.f
+index 6d0488f..fdfbc76 100644
+--- a/ccx_2.23/src/postinitialnet.f
++++ b/ccx_2.23/src/postinitialnet.f
+@@ -77,7 +77,11 @@ c      enddo
+                if(node1.ne.0) then
+                   index=iponoeln(node1)
+ !
+-                  if(inoeln(2,inoeln(2,index)).eq.0) then
++                  if(inoeln(2,index).eq.0) then
++!
++!                 node belongs to one network element only
++!
++                  elseif(inoeln(2,inoeln(2,index)).eq.0) then
+ !
+ !                 no branch nor joint; determine neighboring element
+ !
+@@ -120,7 +124,11 @@ c      enddo
+                if(node2.ne.0) then
+                   index=iponoeln(node2)
+ !
+-                  if(inoeln(2,inoeln(2,index)).eq.0) then
++                  if(inoeln(2,index).eq.0) then
++!
++!                 node belongs to one network element only
++!
++                  elseif(inoeln(2,inoeln(2,index)).eq.0) then
+ !
+ !                 no branch nor joint; determine neighboring element
+ !
+diff --git a/ccx_2.23/src/preinitialnet.f b/ccx_2.23/src/preinitialnet.f
+index 1c58bdd..f253f47 100644
+--- a/ccx_2.23/src/preinitialnet.f
++++ b/ccx_2.23/src/preinitialnet.f
+@@ -507,7 +507,11 @@ c                              write(*,*) nodenei,v(2,nodenei)
+                if(node1.ne.0) then
+                   index=iponoeln(node1)
+ !
+-                  if(inoeln(2,inoeln(2,index)).eq.0) then
++                  if(inoeln(2,index).eq.0) then
++!
++!                 node belongs to one network element only
++!
++                  elseif(inoeln(2,inoeln(2,index)).eq.0) then
+ !
+ !                 no branch nor joint; determine neighboring element
+ !
+@@ -587,7 +591,11 @@ c                              write(*,*) nodenei,v(2,nodenei)
+                if(node2.ne.0) then
+                   index=iponoeln(node2)
+ !
+-                  if(inoeln(2,inoeln(2,index)).eq.0) then
++                  if(inoeln(2,index).eq.0) then
++!
++!                 node belongs to one network element only
++!
++                  elseif(inoeln(2,inoeln(2,index)).eq.0) then
+ !
+ !                 no branch nor joint; determine neighboring element
+ !

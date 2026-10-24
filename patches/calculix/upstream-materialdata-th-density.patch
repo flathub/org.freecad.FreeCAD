@@ -1,0 +1,13 @@
+diff --git a/ccx_2.23/src/materialdata_th.f b/ccx_2.23/src/materialdata_th.f
+index fcc3ac0..1e2b2bc 100644
+--- a/ccx_2.23/src/materialdata_th.f
++++ b/ccx_2.23/src/materialdata_th.f
+@@ -45,7 +45,7 @@
+ !
+          call ident2(rhcon(0,1,imat),t1l,nrhcon(imat),two,id)
+          if(nrhcon(imat).eq.0) then
+-            continue
++            rho=0.d0
+          elseif(nrhcon(imat).eq.1) then
+             rho=rhcon(1,1,imat)
+          elseif(id.eq.0) then

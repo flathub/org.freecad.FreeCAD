@@ -1,0 +1,19 @@
+diff --git a/ccx_2.23/src/compfluidfem.c b/ccx_2.23/src/compfluidfem.c
+index e9b303f..5cec87c 100644
+--- a/ccx_2.23/src/compfluidfem.c
++++ b/ccx_2.23/src/compfluidfem.c
+@@ -201,6 +201,14 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
+   // next line is to be inserted in a similar way for all other parallel parts
+   
+   if(*ne<num_cpus) num_cpus=*ne;
++
++  /* every threaded loop below creates and joins its own threads, which a
++     small mesh does not pay for: give each thread at least 1000 nodes */
++
++  if(*nk/1000<num_cpus){
++    num_cpus=*nk/1000;
++    if(num_cpus<1) num_cpus=1;
++  }
+   
+   printf(" Using up to %" ITGFORMAT " cpu(s) for CFD.\n", num_cpus);
+   

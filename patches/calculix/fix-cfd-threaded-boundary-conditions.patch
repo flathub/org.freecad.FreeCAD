@@ -1,0 +1,153 @@
+diff --git a/ccx_2.23/src/compfluidfem.c b/ccx_2.23/src/compfluidfem.c
+index a1641de..e9b303f 100644
+--- a/ccx_2.23/src/compfluidfem.c
++++ b/ccx_2.23/src/compfluidfem.c
+@@ -38,21 +38,20 @@
+ #include "pastix.h"
+ #endif
+ 
+-static char *lakon1,*sideload1,*sideface1,*labmpc1;
++static char *lakon1,*sideload1,*sideface1;
+ 
+ static ITG *nk1,*kon1,*ipkon1,*ne1,*ipompc1,*nodempc1,*nmpc1,*nelemload1,
+   *nload1,*ipobody1,*nbody1,*nactdoh1,*nmethod1,*ikmpc1,*ilmpc1,*nrhcon1,
+   *ielmat1,*ntmat_1,*ithermal1,nzsv1,*mi1,*nshcon1,*istep1,*iinc1,*ibody1,
+   *iturbulent1,*nelemface1,*nface1,compressible1,num_cpus,*ncocon1,*ipvar1,
+   *ipvarf1,*ipface1,*irow1,*jq1,neq1,*ifreesurface1,nkstart1,nkend1,mt1,
+-  *inomat1,*ierr1=NULL,iexplicit1,*iponoel1,*inoel1,*nodeboun1,*ndirboun1,
+-  *nboun1,*isolidsurf1,*nsolidsurf1,*nfreestream1,*ifreestream1,*ilboun1;
++  *inomat1,*ierr1=NULL,iexplicit1,*iponoel1,*inoel1;
+ 
+ static double *co1,*coefmpc1,*xloadact1,*xbodyact1,*rhcon1,*bpar1=NULL,
+   *vold1,*vcon1,dtimef1,*physcon1,*shcon1,*ttime1,timef1,*xloadold1,
+   *b1=NULL,theta11,*v1,*cocon1,*depth1,dgravity1,*vmax1=NULL,*vconmax1=NULL,
+   reltimef1,*var1,*varf1,*b2=NULL,*aub1,*adl1,*sol1,*aux1,*sa1,shockcoef1,
+-  *xbounact1,*xsolidsurf1,*coefmodmpc1,*voldo1,ratio1;
++  *voldo1,ratio1;
+ 
+ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
+ 		  ITG *ne,char **sidefacep,ITG *ifreestream,
+@@ -153,7 +152,7 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
+ 
+   /* variables for multithreading procedure */
+ 
+-  ITG sys_cpus;
++  ITG sys_cpus,one=1;
+   char *env,*envloc,*envsys;
+       
+   num_cpus=0;
+@@ -423,25 +422,14 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
+     
+   if(compressible==0){
+ 
+-      nodeboun1=nodeboun;ndirboun1=ndirboun;nboun1=nboun;
+-      xbounact1=xbounact;nk1=nk;vold1=vold;isolidsurf1=isolidsurf;
+-      nsolidsurf1=nsolidsurf;xsolidsurf1=xsolidsurf;nfreestream1=nfreestream;
+-      ifreestream1=ifreestream;iturbulent1=iturbulent;vcon1=vcon;
+-      shcon1=shcon;nshcon1=nshcon;ntmat_1=ntmat_;physcon1=physcon;
+-      v1=v;compressible1=compressible;nmpc1=nmpc;nodempc1=nodempc;
+-      ipompc1=ipompc;coefmpc1=coefmpc;inomat1=inomat;mi1=mi;
+-      ilboun1=ilboun;ilmpc1=ilmpc;labmpc1=labmpc;coefmodmpc1=coefmodmpc;
+-      iexplicit1=iexplicit;
+-      
+-      NNEW(ithread,ITG,num_cpus);
+-      for(i=0; i<num_cpus; i++)  {
+-	ithread[i]=i;
+-	pthread_create(&tid[i], NULL, (void *)applybounfemmt, (void *)&ithread[i]);
+-      }
+-      for(i=0; i<num_cpus; i++) {
+-	pthread_join(tid[i], NULL);
+-      }
+-      SFREE(ithread);
++      /* not split over threads: the MPC's read DOF's which the SPC's set,
++         so all SPC's have to be applied before any MPC is evaluated */
++
++      FORTRAN(applybounfem,(nodeboun,ndirboun,xbounact,nk,vold,isolidsurf,
++                            xsolidsurf,ifreestream,iturbulent,vcon,shcon,nshcon,
++                            ntmat_,physcon,v,&compressible,nodempc,ipompc,coefmpc,
++                            inomat,mi,ilboun,ilmpc,labmpc,coefmodmpc,&iexplicit,
++                            &one,nboun,&one,nmpc,&one,nfreestream,&one,nsolidsurf));
+ 
+       /* calculating the conservative variables from the physical
+ 	 variables */
+@@ -952,25 +940,14 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
+       
+       /* inserting SPC's/MPC's to the physical variables */
+ 
+-      nodeboun1=nodeboun;ndirboun1=ndirboun;nboun1=nboun;
+-      xbounact1=xbounact;nk1=nk;vold1=vold;isolidsurf1=isolidsurf;
+-      nsolidsurf1=nsolidsurf;xsolidsurf1=xsolidsurf;nfreestream1=nfreestream;
+-      ifreestream1=ifreestream;iturbulent1=iturbulent;vcon1=vcon;
+-      shcon1=shcon;nshcon1=nshcon;ntmat_1=ntmat_;physcon1=physcon;
+-      v1=v;compressible1=compressible;nmpc1=nmpc;nodempc1=nodempc;
+-      ipompc1=ipompc;coefmpc1=coefmpc;inomat1=inomat;mi1=mi;
+-      ilboun1=ilboun;ilmpc1=ilmpc;labmpc1=labmpc;coefmodmpc1=coefmodmpc;
+-      iexplicit1=iexplicit;
+-      
+-      NNEW(ithread,ITG,num_cpus);
+-      for(i=0; i<num_cpus; i++)  {
+-	ithread[i]=i;
+-	pthread_create(&tid[i], NULL, (void *)applybounfemmt, (void *)&ithread[i]);
+-      }
+-      for(i=0; i<num_cpus; i++) {
+-	pthread_join(tid[i], NULL);
+-      }
+-      SFREE(ithread);
++      /* not split over threads: the MPC's read DOF's which the SPC's set,
++         so all SPC's have to be applied before any MPC is evaluated */
++
++      FORTRAN(applybounfem,(nodeboun,ndirboun,xbounact,nk,vold,isolidsurf,
++                            xsolidsurf,ifreestream,iturbulent,vcon,shcon,nshcon,
++                            ntmat_,physcon,v,&compressible,nodempc,ipompc,coefmpc,
++                            inomat,mi,ilboun,ilmpc,labmpc,coefmodmpc,&iexplicit,
++                            &one,nboun,&one,nmpc,&one,nfreestream,&one,nsolidsurf));
+ 
+       /* calculating the conservative variables from the physical
+ 	 variables */
+@@ -1515,46 +1492,4 @@ void *presgradientmt(ITG *i){
+ 
+   return NULL;
+ }
+-      
+-/* inserting SPC's/MPC's to the physical variables */
+-
+-void *applybounfemmt(ITG *i){
+ 
+-  ITG nbouna,nbounb,nboundelta,nmpca,nmpcb,nmpcdelta,
+-    nfreestreama,nfreestreamb,nfreestreamdelta,
+-    nsolidsurfa,nsolidsurfb,nsolidsurfdelta;
+-    
+-  nboundelta=(ITG)ceil(*nboun1/(double)num_cpus);
+-  nbouna=*i*nboundelta+1;
+-  nbounb=nbouna+nboundelta;
+-  if(nbounb>*nboun1) nbounb=*nboun1;
+-    
+-  nmpcdelta=(ITG)ceil(*nmpc1/(double)num_cpus);
+-  nmpca=*i*nmpcdelta+1;
+-  nmpcb=nmpca+nmpcdelta;
+-  if(nmpcb>*nmpc1) nmpcb=*nmpc1;
+-
+-  if(*iturbulent1>0){
+-    nfreestreamdelta=(ITG)ceil(*nfreestream1/(double)num_cpus);
+-    nfreestreama=*i*nfreestreamdelta+1;
+-    nfreestreamb=nfreestreama+nfreestreamdelta;
+-    if(nfreestreamb>*nfreestream1) nfreestreamb=*nfreestream1;
+-    
+-    nsolidsurfdelta=(ITG)ceil(*nsolidsurf1/(double)num_cpus);
+-    nsolidsurfa=*i*nsolidsurfdelta+1;
+-    nsolidsurfb=nsolidsurfa+nsolidsurfdelta;
+-    if(nsolidsurfb>*nsolidsurf1) nsolidsurfb=*nsolidsurf1;
+-  }
+-      
+-  FORTRAN(applybounfem,(nodeboun1,ndirboun1,xbounact1,nk1,
+-			vold1,isolidsurf1,
+-			xsolidsurf1,ifreestream1,iturbulent1,vcon1,
+-			shcon1,nshcon1,ntmat_1,physcon1,v1,
+-			&compressible1,nodempc1,ipompc1,coefmpc1,
+-			inomat1,mi1,ilboun1,ilmpc1,labmpc1,
+-			coefmodmpc1,&iexplicit1,&nbouna,
+-			&nbounb,&nmpca,&nmpcb,&nfreestreama,&nfreestreamb,
+-			&nsolidsurfa,&nsolidsurfb));
+-
+-  return NULL;
+-}

@@ -1,0 +1,42 @@
+diff --git a/ccx_2.23/src/gen3dboun.f b/ccx_2.23/src/gen3dboun.f
+index 1d0f1b2..4a734e8 100644
+--- a/ccx_2.23/src/gen3dboun.f
++++ b/ccx_2.23/src/gen3dboun.f
+@@ -600,6 +600,19 @@
+               lend=1
+               linc=-1
+               ialeatoric=1
++            else
++!
++!     plane stress, plane strain and axisymmetric elements
++!     have no rotational DOFs: there is nothing to constrain
++!
++              write(*,*) '*WARNING in gen3dboun: in node ',node
++              write(*,*) '         rotational DOF ',idir,' is'
++              write(*,*) '         constrained by a SPC; however,'
++              write(*,*) '         the elements to which this node'
++              write(*,*) '         belongs do not have rotational'
++              write(*,*) '         DOFs; the SPC is ignored'
++              write(*,*)
++              cycle
+             endif
+ !     
+ !     check for transformations
+diff --git a/ccx_2.23/src/gen3dforc.f b/ccx_2.23/src/gen3dforc.f
+index ada1e40..a3087d6 100644
+--- a/ccx_2.23/src/gen3dforc.f
++++ b/ccx_2.23/src/gen3dforc.f
+@@ -632,6 +632,13 @@ c     vold(1,iexpnode)=alpha
+               lend=1
+               linc=-1
+               ialeatoric=1
++            else
++              write(*,*) '*ERROR in gen3dforc: in node ',node
++              write(*,*) '       a rotational DOF is loaded;'
++              write(*,*) '       however, the elements to which'
++              write(*,*) '       this node belongs do not have'
++              write(*,*) '       rotational DOFs'
++              call exit(201)
+             endif
+ !     
+ !     check for transformations

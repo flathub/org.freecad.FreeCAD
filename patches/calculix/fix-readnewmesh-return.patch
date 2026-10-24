@@ -1,0 +1,13 @@
+diff --git a/ccx_2.23/src/readnewmesh.c b/ccx_2.23/src/readnewmesh.c
+index 7cc45f2..52b53cb 100644
+--- a/ccx_2.23/src/readnewmesh.c
++++ b/ccx_2.23/src/readnewmesh.c
+@@ -465,7 +465,7 @@ void readnewmesh(char *jobnamec,ITG *nboun,ITG *nodeboun,ITG *iamboun,
+   *ipkonp=ipkon;*lakonp=lakon;*iamt1p=iamt1;*ipobodyp=ipobody;
+   *iprfnp=iprfn;*konrfnp=konrfn;*ratiorfnp=ratiorfn;
+   
+-  return NULL;
++  return;
+ 
+ }
+ 

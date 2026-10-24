@@ -1,0 +1,35 @@
+diff --git a/ccx_2.23/src/calinput.f b/ccx_2.23/src/calinput.f
+index 07f19a6..0402eba 100644
+--- a/ccx_2.23/src/calinput.f
++++ b/ccx_2.23/src/calinput.f
+@@ -79,6 +79,8 @@
+ !     istep: step number
+ !     istat: error indicator (<0:EOF, >0: input error)
+ !     
++      logical warning
++!
+       logical boun_flag,cload_flag,dload_flag,temp_flag,elprint_flag,
+      &     nodeprint_flag,elfile_flag,nodefile_flag,contactfile_flag,
+      &     dflux_flag,cflux_flag,film_flag,radiate_flag,out3d,
+@@ -1398,8 +1400,19 @@ c
+       if((filab(11)(1:2).eq.'PU').or.(filab(18)(1:3).eq.'PHS').or.
+      &     (filab(19)(1:4).eq.'MAXU').or.(filab(20)(1:4).eq.'MAXS'))
+      &     then
+-        if((nmethod.eq.1).or.(nmethod.eq.3).or.(nmethod.eq.4).or.
+-     &       ((nmethod.eq.2).and.((mcs.eq.0).or.(cs(2,1).lt.0)))) then
++!
++!       cs is only allocated for cyclic symmetry (mcs>0), and Fortran
++!       does not short-circuit .or., so test mcs first
++!
++        warning=((nmethod.eq.1).or.(nmethod.eq.3).or.(nmethod.eq.4))
++        if(nmethod.eq.2) then
++          if(mcs.eq.0) then
++            warning=.true.
++          elseif(cs(2,1).lt.0) then
++            warning=.true.
++          endif
++        endif
++        if(warning) then
+           write(*,*) '*WARNING in calinput: PU, PHS, MAXU or MAXS'
+           write(*,*) '         was selected for a static, a non-'
+           write(*,*) '         cyclic-symmetric frequency, a'

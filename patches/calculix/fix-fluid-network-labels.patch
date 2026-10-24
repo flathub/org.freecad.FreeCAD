@@ -1,0 +1,87 @@
+# Test the right element in two fluid network loops
+#
+#   - fluidsections: relabel the elements of a generated range, not lakon(-increment)
+#   - initialnet: test the branch element's own label, lakon(nelem)
+#
+# Found by fuzzing ccx with malformed variants of 518 input decks under
+# AddressSanitizer, and by review of the code around each crash.
+
+diff --git a/ccx_2.23/src/fluidsections.f b/ccx_2.23/src/fluidsections.f
+index 584148d..cc63f51 100644
+--- a/ccx_2.23/src/fluidsections.f
++++ b/ccx_2.23/src/fluidsections.f
+@@ -912,26 +912,26 @@ c     enddo
+ !     
+ !     gas type elements used for liquids are labeled with LP
+ !     
+-            if((liquid.and.(lakon(ialset(j))(2:3).eq.'RE')).or.
+-     &           (liquid.and.(lakon(ialset(j))(2:3).eq.'OR'))) 
+-     &           lakon(ialset(j))(2:3)='LP'
+-!     
+-            if(liquid.and.(lakon(ialset(j))(2:3).eq.'VO')) then
+-              lakon(ialset(j))(2:3)='LP'
+-              if(lakon(ialset(j))(4:5).eq.'FR') then 
+-                lakon(ialset(j))(4:5)='VF'
+-              else if(lakon(ialset(j))(4:5).eq.'FO') then 
+-                lakon(ialset(j))(4:5)='VS'
++            if((liquid.and.(lakon(k)(2:3).eq.'RE')).or.
++     &           (liquid.and.(lakon(k)(2:3).eq.'OR'))) 
++     &           lakon(k)(2:3)='LP'
++!     
++            if(liquid.and.(lakon(k)(2:3).eq.'VO')) then
++              lakon(k)(2:3)='LP'
++              if(lakon(k)(4:5).eq.'FR') then 
++                lakon(k)(4:5)='VF'
++              else if(lakon(k)(4:5).eq.'FO') then 
++                lakon(k)(4:5)='VS'
+               endif
+             endif
+ !     
+-            if(liquid.and.((lakon(ialset(j))(4:5).eq.'BG').or.
+-     &           (lakon(ialset(j))(4:5).eq.'BT').or.
+-     &           (lakon(ialset(j))(4:5).eq.'MA').or.
+-     &           (lakon(ialset(j))(4:5).eq.'MM').or.
+-     &           (lakon(ialset(j))(4:5).eq.'PA').or.
+-     &           (lakon(ialset(j))(4:5).eq.'PM').or.
+-     &           (lakon(ialset(j))(4:5).eq.'PN'))) then
++            if(liquid.and.((lakon(k)(4:5).eq.'BG').or.
++     &           (lakon(k)(4:5).eq.'BT').or.
++     &           (lakon(k)(4:5).eq.'MA').or.
++     &           (lakon(k)(4:5).eq.'MM').or.
++     &           (lakon(k)(4:5).eq.'PA').or.
++     &           (lakon(k)(4:5).eq.'PM').or.
++     &           (lakon(k)(4:5).eq.'PN'))) then
+               write(*,*) ''
+               write(*,*)'*ERROR reading *FLUID SECTION: element ',k,
+      &             ' is no valid incompressible orifice element.'
+diff --git a/ccx_2.23/src/initialnet.f b/ccx_2.23/src/initialnet.f
+index ed7c5bc..7e3d9ef 100644
+--- a/ccx_2.23/src/initialnet.f
++++ b/ccx_2.23/src/initialnet.f
+@@ -503,7 +503,7 @@ c     enddo
+ !     
+       do i=1,nflow
+         nelem=ieg(i)
+-        if(lakon(i)(2:5).ne.'REBR') cycle
++        if(lakon(nelem)(2:5).ne.'REBR') cycle
+         index=ielprop(nelem)
+ !     
+         nelem1=nint(prop(index+2))
+@@ -530,7 +530,7 @@ c     enddo
+           node2=node12
+         endif
+ !     
+-        if(lakon(i)(6:6).eq.'S') then
++        if(lakon(nelem)(6:6).eq.'S') then
+ !     
+ !     maximum
+ !     
+@@ -539,7 +539,7 @@ c     enddo
+           else
+             v(2,node1)=v(2,node2)
+           endif
+-        elseif(lakon(i)(6:6).eq.'J') then
++        elseif(lakon(nelem)(6:6).eq.'J') then
+ !     
+ !     minimum
+ !     
