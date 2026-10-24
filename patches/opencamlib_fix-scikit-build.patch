@@ -1,0 +1,22 @@
+From a12670046f02e957c2410587221ab1af43e78f39 Mon Sep 17 00:00:00 2001
+From: Chen Chen <maker_cc@foxmail.com>
+Date: Wed, 15 Jul 2026 20:22:47 +0800
+Subject: [PATCH] fix scikit-build
+
+---
+ pyproject.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pyproject.toml b/pyproject.toml
+index 667568ec..08442a18 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -36,7 +36,7 @@ requires = ["scikit-build-core", "pybind11"]
+ build-backend = "scikit_build_core.build"
+ 
+ [tool.scikit-build]
+-cmake.verbose = true
++build.verbose = true
+ logging.level = "DEBUG"
+ wheel.packages = ["src/pythonlib/opencamlib"]
+ 
