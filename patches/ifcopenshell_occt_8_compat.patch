@@ -1,0 +1,866 @@
+Subject: [PATCH] Fix OpenCASCADE (OCCT) 8.0.0 build compatibility
+
+OCCT 8.0.0 introduces several source-incompatible changes that break the
+IfcOpenShell OpenCASCADE geometry kernel:
+
+  * The per-class legacy `Handle_Xxx` typedefs are no longer generated when a
+    class header is included. Replaced all `Handle_Xxx` uses with the
+    `Handle(Xxx)` macro (i.e. `opencascade::handle<Xxx>`), which is OCCT's
+    recommended migration path.
+  * Many headers no longer pull in collection types transitively. Added the
+    required explicit includes for the (still shipped, now deprecated)
+    `TopTools_*`, `TColgp_*`, `TColStd_*`, `Message_ListOfMsg` and
+    `ShapeExtend_DataMapOfShapeListOfMsg` collection aliases.
+  * `BRepCheck_ListIteratorOfListOfStatus.hxx` was removed; iterate the status
+    list with `NCollection_List<BRepCheck_Status>::Iterator` instead.
+  * `Poly_Triangulation::Triangles()` was removed; use `InternalTriangles()`.
+  * `NCollection_LinearVector` (BVH arrays) replaced `push_back` with `Append`.
+  * `BRepTopAdaptor_FClass2d` became non-copyable/non-movable, so it can no
+    longer be stored in a `std::vector` that reserves/relocates; use a
+    `std::deque` instead.
+  * `NCollection_Array1` construction from `std::size_t` bounds is now
+    ambiguous; cast the size to `int` (matching the existing neighbouring code).
+
+This is a downstream patch for the conda-forge occt 8.0.0 migration; upstream
+IfcOpenShell had not yet been ported to OCCT 8.0.0 at the time of writing.
+Drop this patch once a release containing equivalent fixes is used.
+---
+diff --git a/src/ifcgeom/Serialization/schema/Serialization.cpp b/src/ifcgeom/Serialization/schema/Serialization.cpp
+index 96ff0c8..7d92d2c 100644
+--- a/src/ifcgeom/Serialization/schema/Serialization.cpp
++++ b/src/ifcgeom/Serialization/schema/Serialization.cpp
+@@ -1,4 +1,6 @@
+ #include <Geom_Line.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TColgp_Array1OfPnt.hxx>
+ #include <Geom_Circle.hxx>
+ #include <Geom_Ellipse.hxx>
+ #include <Geom_BSplineCurve.hxx>
+@@ -110,16 +112,16 @@ namespace {
+ #endif
+ 
+ template <>
+-int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool advanced) {
++int convert_to_ifc(const Handle(Geom_Curve)& c, IfcSchema::IfcCurve*& curve, bool advanced) {
+ 	if (c->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
+-		Handle_Geom_TrimmedCurve trim = Handle_Geom_TrimmedCurve::DownCast(c);
+-		const Handle_Geom_Curve basis = trim->BasisCurve();
++		Handle(Geom_TrimmedCurve) trim = Handle(Geom_TrimmedCurve)::DownCast(c);
++		const Handle(Geom_Curve) basis = trim->BasisCurve();
+ 		return convert_to_ifc(basis, curve, advanced);
+ 	} else if (c->DynamicType() == STANDARD_TYPE(Geom_Line)) {
+ 		IfcSchema::IfcDirection* d;
+ 		IfcSchema::IfcCartesianPoint* p;
+ 
+-		Handle_Geom_Line line = Handle_Geom_Line::DownCast(c);
++		Handle(Geom_Line) line = Handle(Geom_Line)::DownCast(c);
+ 
+ 		if (!convert_to_ifc(line->Position().Location(), p, advanced)) {
+ 			return 0;
+@@ -135,7 +137,7 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
+ 	} else if (c->DynamicType() == STANDARD_TYPE(Geom_Circle)) {
+ 		IfcSchema::IfcAxis2Placement3D* ax;
+ 
+-		Handle_Geom_Circle circle = Handle_Geom_Circle::DownCast(c);
++		Handle(Geom_Circle) circle = Handle(Geom_Circle)::DownCast(c);
+ 
+ 		convert_to_ifc(circle->Position(), ax, advanced);
+ 		curve = new IfcSchema::IfcCircle(ax, circle->Radius());
+@@ -144,7 +146,7 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
+ 	} else if (c->DynamicType() == STANDARD_TYPE(Geom_Ellipse)) {
+ 		IfcSchema::IfcAxis2Placement3D* ax;
+ 
+-		Handle_Geom_Ellipse ellipse = Handle_Geom_Ellipse::DownCast(c);
++		Handle(Geom_Ellipse) ellipse = Handle(Geom_Ellipse)::DownCast(c);
+ 
+ 		convert_to_ifc(ellipse->Position(), ax, advanced);
+ 		curve = new IfcSchema::IfcEllipse(ax, ellipse->MajorRadius(), ellipse->MinorRadius());
+@@ -153,7 +155,7 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
+ 	}
+ #ifdef SCHEMA_HAS_IfcRationalBSplineSurfaceWithKnots
+ 	else if (c->DynamicType() == STANDARD_TYPE(Geom_BezierCurve)) {
+-		Handle_Geom_BezierCurve bezier = Handle_Geom_BezierCurve::DownCast(c);
++		Handle(Geom_BezierCurve) bezier = Handle(Geom_BezierCurve)::DownCast(c);
+ 
+ 		std::vector<int> mults;
+ 		std::vector<double> knots;
+@@ -199,7 +201,7 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
+ 		return 1;
+ 	}
+ 	else if (c->DynamicType() == STANDARD_TYPE(Geom_BSplineCurve)) {
+-		Handle_Geom_BSplineCurve bspline = Handle_Geom_BSplineCurve::DownCast(c);
++		Handle(Geom_BSplineCurve) bspline = Handle(Geom_BSplineCurve)::DownCast(c);
+ 
+ 		IfcSchema::IfcCartesianPoint::list::ptr points(new IfcSchema::IfcCartesianPoint::list);
+ 		TColgp_Array1OfPnt poles(1, bspline->NbPoles());
+@@ -278,9 +280,9 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
+ }
+ 
+ template <>
+-int convert_to_ifc(const Handle_Geom_Surface& s, IfcSchema::IfcSurface*& surface, bool advanced) {
++int convert_to_ifc(const Handle(Geom_Surface)& s, IfcSchema::IfcSurface*& surface, bool advanced) {
+ 	if (s->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+-		Handle_Geom_Plane plane = Handle_Geom_Plane::DownCast(s);
++		Handle(Geom_Plane) plane = Handle(Geom_Plane)::DownCast(s);
+ 		IfcSchema::IfcAxis2Placement3D* place;
+ 		/// @todo: Note that the Ax3 is converted to an Ax2 here
+ 		if (!convert_to_ifc(plane->Position().Ax2(), place, advanced)) {
+@@ -291,7 +293,7 @@ int convert_to_ifc(const Handle_Geom_Surface& s, IfcSchema::IfcSurface*& surface
+ 	}
+ #ifdef SCHEMA_HAS_IfcRationalBSplineSurfaceWithKnots
+ 	else if (s->DynamicType() == STANDARD_TYPE(Geom_CylindricalSurface)) {
+-		Handle_Geom_CylindricalSurface cyl = Handle_Geom_CylindricalSurface::DownCast(s);
++		Handle(Geom_CylindricalSurface) cyl = Handle(Geom_CylindricalSurface)::DownCast(s);
+ 		IfcSchema::IfcAxis2Placement3D* place;
+ 		/// @todo: Note that the Ax3 is converted to an Ax2 here
+ 		if (!convert_to_ifc(cyl->Position().Ax2(), place, advanced)) {
+@@ -302,7 +304,7 @@ int convert_to_ifc(const Handle_Geom_Surface& s, IfcSchema::IfcSurface*& surface
+ 	} else if (s->DynamicType() == STANDARD_TYPE(Geom_BSplineSurface)) {
+ 		typedef aggregate_of_aggregate_of<IfcSchema::IfcCartesianPoint> points_t;
+ 
+-		Handle_Geom_BSplineSurface bspline = Handle_Geom_BSplineSurface::DownCast(s);
++		Handle(Geom_BSplineSurface) bspline = Handle(Geom_BSplineSurface)::DownCast(s);
+ 		points_t::ptr points(new points_t);
+ 
+ 		TColgp_Array2OfPnt poles(1, bspline->NbUPoles(), 1, bspline->NbVPoles());
+@@ -405,7 +407,7 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcCurve*& c, bool advanced)
+ 	double a, b;
+ 	IfcSchema::IfcCurve* base;
+ 
+-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, a, b);
++	Handle(Geom_Curve) crv = BRep_Tool::Curve(e, a, b);
+ 	if (!convert_to_ifc(crv, base, advanced)) {
+ 		return 0;
+ 	}
+@@ -436,7 +438,7 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcEdge*& edge, bool advance
+ 		return 0;
+ 	}
+ 
+-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, a, b);
++	Handle(Geom_Curve) crv = BRep_Tool::Curve(e, a, b);
+ 
+ 	if (crv.IsNull()) {
+ 		return 0;
+@@ -460,13 +462,13 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcEdge*& edge, bool advance
+ }
+ 
+ namespace {
+-	bool is_polygonal(const Handle_Geom_Curve& crv) {
++	bool is_polygonal(const Handle(Geom_Curve)& crv) {
+ 		if (crv->DynamicType() == STANDARD_TYPE(Geom_Line)) {
+ 			return true;
+ 		} else if (crv->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
+-			return is_polygonal(Handle_Geom_TrimmedCurve::DownCast(crv)->BasisCurve());
++			return is_polygonal(Handle(Geom_TrimmedCurve)::DownCast(crv)->BasisCurve());
+ 		} else if (crv->DynamicType() == STANDARD_TYPE(Geom_BSplineCurve)) {
+-			auto bspl = Handle_Geom_BSplineCurve::DownCast(crv);
++			auto bspl = Handle(Geom_BSplineCurve)::DownCast(crv);
+ 			return bspl->NbPoles() == 2 && bspl->Degree() == 1;
+ 		} else {
+ 			return false;
+@@ -479,7 +481,7 @@ int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool adva
+ 	bool polygonal = true;
+ 	for (TopExp_Explorer exp(wire, TopAbs_EDGE); exp.More(); exp.Next()) {
+ 		double a, b;
+-		Handle_Geom_Curve crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
++		Handle(Geom_Curve) crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
+ 		if (crv.IsNull()) {
+ 			continue;
+ 		}
+@@ -526,7 +528,7 @@ int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool adva
+ 
+ template <>
+ int convert_to_ifc(const TopoDS_Face& f, IfcSchema::IfcFace*& face, bool advanced) {
+-	Handle_Geom_Surface surf = BRep_Tool::Surface(f);
++	Handle(Geom_Surface) surf = BRep_Tool::Surface(f);
+ 	TopExp_Explorer exp(f, TopAbs_WIRE);
+ 	IfcSchema::IfcFaceBound::list::ptr bounds(new IfcSchema::IfcFaceBound::list);
+ 	int index = 0;
+@@ -723,7 +725,7 @@ IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(tesselate)(const TopoDS_Shape& shape, doub
+ 				IfcSchema::IfcCartesianPoint* cpnt = new IfcSchema::IfcCartesianPoint(xyz);
+ 				vertices.push_back(cpnt);
+ 			}
+-			const Poly_Array1OfTriangle& triangles = tri->Triangles();
++			const NCollection_Array1<Poly_Triangle>& triangles = tri->InternalTriangles();
+ 			for (int i = 1; i <= triangles.Length(); ++i) {
+ 				int n1, n2, n3;
+ 				triangles(i).Get(n1, n2, n3);
+diff --git a/src/ifcgeom/kernels/opencascade/IfcGeomTree.h b/src/ifcgeom/kernels/opencascade/IfcGeomTree.h
+index 46e0f06..dae7490 100644
+--- a/src/ifcgeom/kernels/opencascade/IfcGeomTree.h
++++ b/src/ifcgeom/kernels/opencascade/IfcGeomTree.h
+@@ -29,6 +29,8 @@
+ #include "base_utils.h"
+ 
+ #include <NCollection_UBTree.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+ #include <BRepBndLib.hxx>
+ #include <Bnd_Box.hxx>
+ #include <BRep_Builder.hxx>
+@@ -1925,7 +1927,7 @@ namespace IfcGeom {
+             BVH_Triangulation<Standard_Real, 3> triangulation(builder);
+ 
+             for (int i = 0; i < elem_verts.size(); i += 3) {
+-                triangulation.Vertices.push_back(BVH_Vec3d(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
++                triangulation.Vertices.Append(BVH_Vec3d(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
+                 verts.push_back(gp_Pnt(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
+             }
+ 
+@@ -1937,7 +1939,7 @@ namespace IfcGeom {
+                 gp_Vec dir2(v1_pnt, v3_pnt);
+                 gp_Vec cross_product = dir1.Crossed(dir2);
+                 if (cross_product.Magnitude() > Precision::Confusion()) {
+-                    triangulation.Elements.push_back(BVH_Vec4i(
++                    triangulation.Elements.Append(BVH_Vec4i(
+                         elem_faces[i], elem_faces[i + 1], elem_faces[i + 2], original_tris_index
+                     ));
+                     original_tris_index++;
+diff --git a/src/ifcgeom/kernels/opencascade/OpenCascadeConversionResult.cpp b/src/ifcgeom/kernels/opencascade/OpenCascadeConversionResult.cpp
+index 560c1a2..b71b33a 100644
+--- a/src/ifcgeom/kernels/opencascade/OpenCascadeConversionResult.cpp
++++ b/src/ifcgeom/kernels/opencascade/OpenCascadeConversionResult.cpp
+@@ -1,6 +1,10 @@
+ ﻿#include <map>
+ 
+ #include <TopoDS.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_IndexedMapOfShape.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_ListOfShape.hxx>
+ #include <TopExp.hxx>
+ #include <BRepGProp.hxx>
+ #include <GProp_GProps.hxx>
+@@ -110,7 +114,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
+ 		std::vector<std::tuple<int, int, int>> triangle_indices;
+ 
+ 		TopLoc_Location loc;
+-		Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
++		Handle(Poly_Triangulation) tri = BRep_Tool::Triangulation(face, loc);
+ 
+ 		if (tri.IsNull()) {
+ 			Logger::Message(Logger::LOG_ERROR, "Triangulation missing for face");
+@@ -146,7 +150,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
+ 							normal = normal_direction;
+ 						}
+ 					} else {
+-						Handle_Geom_Surface surf = BRep_Tool::Surface(face);
++						Handle(Geom_Surface) surf = BRep_Tool::Surface(face);
+ 						// Special case the normal at the poles of a spherical surface
+ 						if (surf->DynamicType() == STANDARD_TYPE(Geom_SphericalSurface)) {
+ 							if (fabs(fabs(uv.Y()) - M_PI / 2.) < 1.e-9) {
+@@ -166,7 +170,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
+ 				}
+ 			}
+ 
+-			const Poly_Array1OfTriangle& triangles = tri->Triangles();
++			const NCollection_Array1<Poly_Triangle>& triangles = tri->InternalTriangles();
+ 			for (int i = 1; i <= triangles.Length(); ++i) {
+ 				int n1, n2, n3;
+ 				if (face.Orientation() == TopAbs_REVERSED)
+@@ -635,7 +639,7 @@ namespace {
+ 						coords.push_back(tri->Node(i).Transformed(loc).XYZ());
+ 					}
+ 
+-					const Poly_Array1OfTriangle& triangles = tri->Triangles();
++					const NCollection_Array1<Poly_Triangle>& triangles = tri->InternalTriangles();
+ 					for (int i = 1; i <= triangles.Length(); ++i) {
+ 						int n1, n2, n3;
+ 
+diff --git a/src/ifcgeom/kernels/opencascade/OpenCascadeKernel.cpp b/src/ifcgeom/kernels/opencascade/OpenCascadeKernel.cpp
+index e8b6729..80064a3 100644
+--- a/src/ifcgeom/kernels/opencascade/OpenCascadeKernel.cpp
++++ b/src/ifcgeom/kernels/opencascade/OpenCascadeKernel.cpp
+@@ -29,6 +29,8 @@
+ #include "base_utils.h"
+ 
+ #include <BRepPrimAPI_MakeRevol.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_ListOfShape.hxx>
+ #include <BOPAlgo_MakerVolume.hxx>
+ 
+ namespace {
+diff --git a/src/ifcgeom/kernels/opencascade/base_utils.cpp b/src/ifcgeom/kernels/opencascade/base_utils.cpp
+index 5d8a07b..1236a44 100644
+--- a/src/ifcgeom/kernels/opencascade/base_utils.cpp
++++ b/src/ifcgeom/kernels/opencascade/base_utils.cpp
+@@ -5,6 +5,8 @@
+ #include "boolean_utils.h"
+ 
+ #include <Standard_Version.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_ListOfShape.hxx>
+ 
+ #include <TopExp.hxx>
+ #include <TopExp_Explorer.hxx>
+@@ -49,6 +51,11 @@
+ #include <BRepAlgoAPI_Fuse.hxx>
+ 
+ #include <TopTools_IndexedMapOfShape.hxx>
++// OCCT 8.0.0 no longer pulls these in transitively
++#include <TopTools_MapOfShape.hxx>
++#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
++#include <NCollection_List.hxx>
++#include <BRepCheck_Status.hxx>
+ 
+ #include <ShapeUpgrade_UnifySameDomain.hxx>
+ 
+@@ -199,7 +206,7 @@ gp_Trsf IfcGeom::util::combine_offset_and_rotation(const gp_Vec & offset, const
+ }
+ 
+ 
+-bool IfcGeom::util::project(const Handle_Geom_Surface& srf, const TopoDS_Shape& shp, double& u1, double& v1, double& u2, double& v2, double widen) {
++bool IfcGeom::util::project(const Handle(Geom_Surface)& srf, const TopoDS_Shape& shp, double& u1, double& v1, double& u2, double& v2, double widen) {
+ 	// @todo std::unique_ptr for C++11
+ 	ShapeAnalysis_Surface* sas = 0;
+ 	Handle(Geom_Plane) pln;
+@@ -246,7 +253,7 @@ bool IfcGeom::util::project(const Handle_Geom_Surface& srf, const TopoDS_Shape&
+ 			const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
+ 
+ 			double a, b;
+-			Handle_Geom_Curve crv = BRep_Tool::Curve(e, a, b);
++			Handle(Geom_Curve) crv = BRep_Tool::Curve(e, a, b);
+ 			gp_Pnt p;
+ 			crv->D0((a + b) / 2., p);
+ 
+@@ -449,24 +456,24 @@ bool IfcGeom::util::fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b,
+ }
+ 
+ 
+-const Handle_Geom_Curve IfcGeom::util::intersect(const Handle_Geom_Surface& a, const Handle_Geom_Surface& b) {
++const Handle(Geom_Curve) IfcGeom::util::intersect(const Handle(Geom_Surface)& a, const Handle(Geom_Surface)& b) {
+ 	GeomAPI_IntSS x(a, b, 1.e-7);
+ 	if (x.IsDone() && x.NbLines() == 1) {
+ 		return x.Line(1);
+ 	} else {
+-		return Handle_Geom_Curve();
++		return Handle(Geom_Curve)();
+ 	}
+ }
+ 
+-const Handle_Geom_Curve IfcGeom::util::intersect(const Handle_Geom_Surface& a, const TopoDS_Face& b) {
++const Handle(Geom_Curve) IfcGeom::util::intersect(const Handle(Geom_Surface)& a, const TopoDS_Face& b) {
+ 	return intersect(a, BRep_Tool::Surface(b));
+ }
+ 
+-const Handle_Geom_Curve IfcGeom::util::intersect(const TopoDS_Face& a, const Handle_Geom_Surface& b) {
++const Handle(Geom_Curve) IfcGeom::util::intersect(const TopoDS_Face& a, const Handle(Geom_Surface)& b) {
+ 	return intersect(BRep_Tool::Surface(a), b);
+ }
+ 
+-bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const Handle_Geom_Surface& b, gp_Pnt& p) {
++bool IfcGeom::util::intersect(const Handle(Geom_Curve)& a, const Handle(Geom_Surface)& b, gp_Pnt& p) {
+ 	GeomAPI_IntCS x(a, b);
+ 	if (x.IsDone() && x.NbPoints() == 1) {
+ 		p = x.Point(1);
+@@ -476,11 +483,11 @@ bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const Handle_Geom_Surf
+ 	}
+ }
+ 
+-bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const TopoDS_Face& b, gp_Pnt &c) {
++bool IfcGeom::util::intersect(const Handle(Geom_Curve)& a, const TopoDS_Face& b, gp_Pnt &c) {
+ 	return intersect(a, BRep_Tool::Surface(b), c);
+ }
+ 
+-bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const TopoDS_Shape& b, std::vector<gp_Pnt>& out) {
++bool IfcGeom::util::intersect(const Handle(Geom_Curve)& a, const TopoDS_Shape& b, std::vector<gp_Pnt>& out) {
+ 	TopExp_Explorer exp(b, TopAbs_FACE);
+ 	gp_Pnt p;
+ 	for (; exp.More(); exp.Next()) {
+@@ -491,12 +498,12 @@ bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const TopoDS_Shape& b,
+ 	return !out.empty();
+ }
+ 
+-bool IfcGeom::util::intersect(const Handle_Geom_Surface& a, const TopoDS_Shape& b, std::vector< std::pair<Handle_Geom_Surface, Handle_Geom_Curve> >& out) {
++bool IfcGeom::util::intersect(const Handle(Geom_Surface)& a, const TopoDS_Shape& b, std::vector< std::pair<Handle(Geom_Surface), Handle(Geom_Curve)> >& out) {
+ 	TopExp_Explorer exp(b, TopAbs_FACE);
+ 	for (; exp.More(); exp.Next()) {
+ 		const TopoDS_Face& f = TopoDS::Face(exp.Current());
+-		const Handle_Geom_Surface& s = BRep_Tool::Surface(f);
+-		Handle_Geom_Curve crv = intersect(a, s);
++		const Handle(Geom_Surface)& s = BRep_Tool::Surface(f);
++		Handle(Geom_Curve) crv = intersect(a, s);
+ 		if (!crv.IsNull()) {
+ 			out.push_back(std::make_pair(s, crv));
+ 		}
+@@ -516,7 +523,7 @@ bool IfcGeom::util::closest(const gp_Pnt& a, const std::vector<gp_Pnt>& b, gp_Pn
+ 	return minimal_distance != std::numeric_limits<double>::infinity();
+ }
+ 
+-bool IfcGeom::util::project(const Handle_Geom_Curve& crv, const gp_Pnt& pt, gp_Pnt& p, double& u, double& d) {
++bool IfcGeom::util::project(const Handle(Geom_Curve)& crv, const gp_Pnt& pt, gp_Pnt& p, double& u, double& d) {
+ 	ShapeAnalysis_Curve sac;
+ 	sac.Project(crv, pt, 1e-3, p, u, false);
+ 	d = pt.Distance(p);
+@@ -875,7 +882,7 @@ bool IfcGeom::util::validate_shape(const TopoDS_Shape& s) {
+ 	std::function<void(const TopoDS_Shape&)> dump;
+ 	dump = [&ana, &str, &dump, &any_emitted](const TopoDS_Shape& s) {
+ 		if (!ana.Result(s).IsNull()) {
+-			BRepCheck_ListIteratorOfListOfStatus itl;
++			NCollection_List<BRepCheck_Status>::Iterator itl;
+ 			itl.Initialize(ana.Result(s)->Status());
+ 			for (; itl.More(); itl.Next()) {
+ 				if (itl.Value() != BRepCheck_NoError) {
+diff --git a/src/ifcgeom/kernels/opencascade/base_utils.h b/src/ifcgeom/kernels/opencascade/base_utils.h
+index f8f86fa..5c262c5 100644
+--- a/src/ifcgeom/kernels/opencascade/base_utils.h
++++ b/src/ifcgeom/kernels/opencascade/base_utils.h
+@@ -58,16 +58,16 @@ namespace IfcGeom {
+ 		IFC_GEOMLIBRARY_API gp_Pnt point_above_plane(const gp_Pln& pln, bool agree = true);
+ 
+ 		IFC_GEOMLIBRARY_API bool fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, TopoDS_Shape& box, double& height, double tol);
+-		IFC_GEOMLIBRARY_API const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const Handle_Geom_Surface&);
+-		IFC_GEOMLIBRARY_API const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const TopoDS_Face&);
+-		IFC_GEOMLIBRARY_API const Handle_Geom_Curve intersect(const TopoDS_Face&, const Handle_Geom_Surface&);
+-		IFC_GEOMLIBRARY_API bool intersect(const Handle_Geom_Curve&, const Handle_Geom_Surface&, gp_Pnt&);
+-		IFC_GEOMLIBRARY_API bool intersect(const Handle_Geom_Curve&, const TopoDS_Face&, gp_Pnt&);
+-		IFC_GEOMLIBRARY_API bool intersect(const Handle_Geom_Curve&, const TopoDS_Shape&, std::vector<gp_Pnt>&);
+-		IFC_GEOMLIBRARY_API bool intersect(const Handle_Geom_Surface&, const TopoDS_Shape&, std::vector< std::pair<Handle_Geom_Surface, Handle_Geom_Curve> >&);
++		IFC_GEOMLIBRARY_API const Handle(Geom_Curve) intersect(const Handle(Geom_Surface)&, const Handle(Geom_Surface)&);
++		IFC_GEOMLIBRARY_API const Handle(Geom_Curve) intersect(const Handle(Geom_Surface)&, const TopoDS_Face&);
++		IFC_GEOMLIBRARY_API const Handle(Geom_Curve) intersect(const TopoDS_Face&, const Handle(Geom_Surface)&);
++		IFC_GEOMLIBRARY_API bool intersect(const Handle(Geom_Curve)&, const Handle(Geom_Surface)&, gp_Pnt&);
++		IFC_GEOMLIBRARY_API bool intersect(const Handle(Geom_Curve)&, const TopoDS_Face&, gp_Pnt&);
++		IFC_GEOMLIBRARY_API bool intersect(const Handle(Geom_Curve)&, const TopoDS_Shape&, std::vector<gp_Pnt>&);
++		IFC_GEOMLIBRARY_API bool intersect(const Handle(Geom_Surface)&, const TopoDS_Shape&, std::vector< std::pair<Handle(Geom_Surface), Handle(Geom_Curve)> >&);
+ 		IFC_GEOMLIBRARY_API bool closest(const gp_Pnt&, const std::vector<gp_Pnt>&, gp_Pnt&);
+-		IFC_GEOMLIBRARY_API bool project(const Handle_Geom_Curve&, const gp_Pnt&, gp_Pnt& p, double& u, double& d);
+-		IFC_GEOMLIBRARY_API bool project(const Handle_Geom_Surface&, const TopoDS_Shape&, double& u1, double& v1, double& u2, double& v2, double widen = 0.1);
++		IFC_GEOMLIBRARY_API bool project(const Handle(Geom_Curve)&, const gp_Pnt&, gp_Pnt& p, double& u, double& d);
++		IFC_GEOMLIBRARY_API bool project(const Handle(Geom_Surface)&, const TopoDS_Shape&, double& u1, double& v1, double& u2, double& v2, double widen = 0.1);
+ 
+ 		IFC_GEOMLIBRARY_API double shape_volume(const TopoDS_Shape& s);
+ 		IFC_GEOMLIBRARY_API double face_area(const TopoDS_Face& f);
+diff --git a/src/ifcgeom/kernels/opencascade/boolean_result.cpp b/src/ifcgeom/kernels/opencascade/boolean_result.cpp
+index 64b65f5..85033cb 100644
+--- a/src/ifcgeom/kernels/opencascade/boolean_result.cpp
++++ b/src/ifcgeom/kernels/opencascade/boolean_result.cpp
+@@ -1,4 +1,6 @@
+ #include "OpenCascadeKernel.h"
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_ListOfShape.hxx>
+ 
+ #include "boolean_utils.h"
+ #include "base_utils.h"
+diff --git a/src/ifcgeom/kernels/opencascade/boolean_utils.cpp b/src/ifcgeom/kernels/opencascade/boolean_utils.cpp
+index d41f1e4..d5993f1 100644
+--- a/src/ifcgeom/kernels/opencascade/boolean_utils.cpp
++++ b/src/ifcgeom/kernels/opencascade/boolean_utils.cpp
+@@ -4,6 +4,9 @@
+ #include "base_utils.h"
+ 
+ #include <BRepBuilderAPI_Copy.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_IndexedMapOfShape.hxx>
++#include <TopTools_ListOfShape.hxx>
+ #include <TopExp_Explorer.hxx>
+ #include <GProp_GProps.hxx>
+ #include <BRepGProp.hxx>
+@@ -23,12 +26,16 @@
+ #include <BOPAlgo_Alerts.hxx>
+ #include <ShapeFix_Shape.hxx>
+ #include <BRepCheck_Analyzer.hxx>
+-#include <BRepCheck_ListIteratorOfListOfStatus.hxx>
++// OCCT 8.0.0: BRepCheck_ListIteratorOfListOfStatus.hxx removed; use NCollection_List iterator
++#include <NCollection_List.hxx>
++#include <BRepCheck_Status.hxx>
++#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+ #include <BRepCheck.hxx>
+ #include <ShapeAnalysis_Edge.hxx>
+ #include <Bnd_OBB.hxx>
+ 
+ #include <vector>
++#include <deque>
+ #include <thread>
+ 
+ void IfcGeom::util::copy_operand(const TopTools_ListOfShape & l, TopTools_ListOfShape & r) {
+@@ -263,8 +270,8 @@ bool IfcGeom::util::get_edge_axis(const TopoDS_Edge & e, gp_Ax1 & ax) {
+ 	double _, __;
+ 
+ 	auto crv = BRep_Tool::Curve(e, _, __);
+-	auto line = Handle_Geom_Line::DownCast(crv);
+-	auto bsple = Handle_Geom_BSplineCurve::DownCast(crv);
++	auto line = Handle(Geom_Line)::DownCast(crv);
++	auto bsple = Handle(Geom_BSplineCurve)::DownCast(crv);
+ 
+ 	if (line) {
+ 		ax = line->Position();
+@@ -722,8 +729,8 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
+ 	std::vector<TopoDS_Face> wire_faces;
+ 	wire_faces.reserve(wires.size());
+ 
+-	std::vector<BRepTopAdaptor_FClass2d> wire_clss;
+-	wire_clss.reserve(wires.size());
++	// OCCT 8.0.0 made BRepTopAdaptor_FClass2d non-copyable/non-movable; use deque (no relocation)
++	std::deque<BRepTopAdaptor_FClass2d> wire_clss;
+ 
+ 	std::vector<std::unique_ptr<ShapeAnalysis_Surface>> sass;
+ 	sass.reserve(wires.size());
+@@ -1193,7 +1200,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
+ 					std::function<void(const TopoDS_Shape&)> dump;
+ 					dump = [&ana, &str, &dump, &any_emitted](const TopoDS_Shape& s) {
+ 						if (!ana.Result(s).IsNull()) {
+-							BRepCheck_ListIteratorOfListOfStatus itl;
++							NCollection_List<BRepCheck_Status>::Iterator itl;
+ 							itl.Initialize(ana.Result(s)->Status());
+ 							for (; itl.More(); itl.Next()) {
+ 								if (itl.Value() != BRepCheck_NoError) {
+diff --git a/src/ifcgeom/kernels/opencascade/bspline_surface.cpp b/src/ifcgeom/kernels/opencascade/bspline_surface.cpp
+index 2f85426..cce434d 100644
+--- a/src/ifcgeom/kernels/opencascade/bspline_surface.cpp
++++ b/src/ifcgeom/kernels/opencascade/bspline_surface.cpp
+@@ -1,6 +1,11 @@
+ #include "OpenCascadeKernel.h"
+ 
+ #include <Geom_BSplineSurface.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TColStd_Array1OfInteger.hxx>
++#include <TColStd_Array1OfReal.hxx>
++#include <TColStd_Array2OfReal.hxx>
++#include <TColgp_Array2OfPnt.hxx>
+ 
+ using namespace ifcopenshell::geometry;
+ using namespace ifcopenshell::geometry::kernels;
+diff --git a/src/ifcgeom/kernels/opencascade/face.cpp b/src/ifcgeom/kernels/opencascade/face.cpp
+index 661b725..b4f3827 100644
+--- a/src/ifcgeom/kernels/opencascade/face.cpp
++++ b/src/ifcgeom/kernels/opencascade/face.cpp
+@@ -18,6 +18,14 @@
+  ********************************************************************************/
+ 
+ #include <gp_Vec.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <Message_ListOfMsg.hxx>
++#include <ShapeExtend_DataMapOfShapeListOfMsg.hxx>
++#include <TColStd_Array1OfInteger.hxx>
++#include <TColStd_Array1OfReal.hxx>
++#include <TColgp_Array2OfPnt.hxx>
++#include <TopTools_DataMapOfShapeListOfShape.hxx>
++#include <TopTools_ListOfShape.hxx>
+ #include <gp_Dir.hxx>
+ #include <gp_Pln.hxx>
+ #include <Geom_Line.hxx>
+diff --git a/src/ifcgeom/kernels/opencascade/faceset_helper.cpp b/src/ifcgeom/kernels/opencascade/faceset_helper.cpp
+index 2fd74cd..1738728 100644
+--- a/src/ifcgeom/kernels/opencascade/faceset_helper.cpp
++++ b/src/ifcgeom/kernels/opencascade/faceset_helper.cpp
+@@ -1,4 +1,6 @@
+ #include "OpenCascadeKernel.h"
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_ListOfShape.hxx>
+ 
+ #include "IfcGeomTree.h"
+ #include "wire_utils.h"
+diff --git a/src/ifcgeom/kernels/opencascade/layerset.cpp b/src/ifcgeom/kernels/opencascade/layerset.cpp
+index c80e4d9..121b277 100644
+--- a/src/ifcgeom/kernels/opencascade/layerset.cpp
++++ b/src/ifcgeom/kernels/opencascade/layerset.cpp
+@@ -164,12 +164,12 @@ namespace {
+ }
+ 
+ 
+-bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const std::vector< std::vector<Handle_Geom_Surface> >& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles, ConversionResults& result, double tol) {
++bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const std::vector< std::vector<Handle(Geom_Surface)> >& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles, ConversionResults& result, double tol) {
+ 	Bnd_Box bb;
+ 	TopoDS_Shape input;
+ 	flatten_shape_list(items, input, false, false, tol);
+ 
+-	typedef std::vector< std::vector<Handle_Geom_Surface> > folded_surfaces_t;
++	typedef std::vector< std::vector<Handle(Geom_Surface)> > folded_surfaces_t;
+ 	typedef std::vector< std::pair< TopoDS_Face, std::pair<gp_Pnt, gp_Pnt> > > faces_with_mass_t;
+ 
+ 	TopTools_ListOfShape shells;
+@@ -178,7 +178,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const
+ 		if (it->empty()) {
+ 			continue;
+ 		} else if (it->size() == 1) {
+-			const Handle_Geom_Surface& surface = (*it)[0];
++			const Handle(Geom_Surface)& surface = (*it)[0];
+ 			double u1, v1, u2, v2;
+ 			if (!project(surface, input, u1, v1, u2, v2)) {
+ 				continue;
+@@ -187,7 +187,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const
+ 		} else {
+ 			faces_with_mass_t solids;
+ 			for (folded_surfaces_t::value_type::const_iterator jt = it->begin(); jt != it->end(); ++jt) {
+-				const Handle_Geom_Surface& surface = *jt;
++				const Handle(Geom_Surface)& surface = *jt;
+ 				double u1, v1, u2, v2;
+ 				if (!project(surface, input, u1, v1, u2, v2)) {
+ 					continue;
+@@ -281,7 +281,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const
+ 
+ }
+ 
+-bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles, ConversionResults& result, double tol) {
++bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::vector<Handle(Geom_Surface)>& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles, ConversionResults& result, double tol) {
+ 	if (surfaces.size() < 3) {
+ 
+ 		return false;
+@@ -370,7 +370,7 @@ bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::ve
+ }
+ 
+ 
+-bool IfcGeom::util::split_solid_by_surface(const TopoDS_Shape& input, const Handle_Geom_Surface& surface, TopoDS_Shape& front, TopoDS_Shape& back, double tol) {
++bool IfcGeom::util::split_solid_by_surface(const TopoDS_Shape& input, const Handle(Geom_Surface)& surface, TopoDS_Shape& front, TopoDS_Shape& back, double tol) {
+ 	// Use an unbounded surface, that isolate part of the input shape,
+ 	// to split this shape into two parts. Make sure that the addition
+ 	// of the two result volumes matches that of the input.
+diff --git a/src/ifcgeom/kernels/opencascade/layerset.h b/src/ifcgeom/kernels/opencascade/layerset.h
+index 4d51cb8..4904dea 100644
+--- a/src/ifcgeom/kernels/opencascade/layerset.h
++++ b/src/ifcgeom/kernels/opencascade/layerset.h
+@@ -11,11 +11,11 @@
+ 
+ namespace IfcGeom {
+ 	namespace util {
+-		bool apply_layerset(const ConversionResults&, const std::vector<Handle_Geom_Surface>&, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>&, ConversionResults&, double tol);
++		bool apply_layerset(const ConversionResults&, const std::vector<Handle(Geom_Surface)>&, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>&, ConversionResults&, double tol);
+ 
+-		bool apply_folded_layerset(const ConversionResults&, const std::vector< std::vector<Handle_Geom_Surface> >&, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>&, ConversionResults&, double tol);
++		bool apply_folded_layerset(const ConversionResults&, const std::vector< std::vector<Handle(Geom_Surface)> >&, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>&, ConversionResults&, double tol);
+ 
+-		bool split_solid_by_surface(const TopoDS_Shape&, const Handle_Geom_Surface&, TopoDS_Shape&, TopoDS_Shape&, double tol);
++		bool split_solid_by_surface(const TopoDS_Shape&, const Handle(Geom_Surface)&, TopoDS_Shape&, TopoDS_Shape&, double tol);
+ 
+ 		bool split_solid_by_shell(const TopoDS_Shape&, const TopoDS_Shape& s, TopoDS_Shape&, TopoDS_Shape&, double tol);
+ 	}
+diff --git a/src/ifcgeom/kernels/opencascade/loft.cpp b/src/ifcgeom/kernels/opencascade/loft.cpp
+index 719e089..bc8de54 100644
+--- a/src/ifcgeom/kernels/opencascade/loft.cpp
++++ b/src/ifcgeom/kernels/opencascade/loft.cpp
+@@ -21,6 +21,9 @@
+ #include "base_utils.h"
+ 
+ #include <TopExp.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
++#include <TopTools_ListOfShape.hxx>
+ #include <BRepTools_WireExplorer.hxx>
+ #include <BRepBuilderAPI_MakeEdge.hxx>
+ #include <BRepBuilderAPI_MakePolygon.hxx>
+diff --git a/src/ifcgeom/kernels/opencascade/loop.cpp b/src/ifcgeom/kernels/opencascade/loop.cpp
+index 5d8a538..0e695cf 100644
+--- a/src/ifcgeom/kernels/opencascade/loop.cpp
++++ b/src/ifcgeom/kernels/opencascade/loop.cpp
+@@ -2,6 +2,10 @@
+ #include "wire_builder.h"
+ 
+ #include <Geom_Line.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_IndexedMapOfShape.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+ #include <Geom_Circle.hxx>
+ #include <Geom_Ellipse.hxx>
+ #include <BRepAdaptor_CompCurve.hxx>
+@@ -39,8 +43,8 @@ namespace {
+ 
+ 			const bool is_rational = !!bc->weights;
+ 
+-			TColgp_Array1OfPnt      Poles(0, bc->control_points.size() - 1);
+-			TColStd_Array1OfReal    Weights(0, bc->control_points.size() - 1);
++			TColgp_Array1OfPnt      Poles(0, (int)bc->control_points.size() - 1);
++			TColStd_Array1OfReal    Weights(0, (int)bc->control_points.size() - 1);
+ 			TColStd_Array1OfReal    Knots(0, (int)bc->knots.size() - 1);
+ 			TColStd_Array1OfInteger Mults(0, (int)bc->knots.size() - 1);
+ 			Standard_Integer        Degree = bc->degree;
+diff --git a/src/ifcgeom/kernels/opencascade/shell.cpp b/src/ifcgeom/kernels/opencascade/shell.cpp
+index 4456895..3c915b3 100644
+--- a/src/ifcgeom/kernels/opencascade/shell.cpp
++++ b/src/ifcgeom/kernels/opencascade/shell.cpp
+@@ -1,4 +1,6 @@
+ #include "OpenCascadeKernel.h"
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_ListOfShape.hxx>
+ 
+ #include "base_utils.h"
+ 
+diff --git a/src/ifcgeom/kernels/opencascade/sweep_along_curve.cpp b/src/ifcgeom/kernels/opencascade/sweep_along_curve.cpp
+index 510c8f1..e17c7e8 100644
+--- a/src/ifcgeom/kernels/opencascade/sweep_along_curve.cpp
++++ b/src/ifcgeom/kernels/opencascade/sweep_along_curve.cpp
+@@ -22,6 +22,8 @@
+ #include "wire_utils.h"
+ 
+ #include <BRepOffsetAPI_MakePipeShell.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+ #include <Geom_Plane.hxx>
+ #include <ShapeAnalysis_Surface.hxx>
+ #include <BRepBuilderAPI_Transform.hxx>
+diff --git a/src/ifcgeom/kernels/opencascade/sweep_utils.cpp b/src/ifcgeom/kernels/opencascade/sweep_utils.cpp
+index c161669..ae41f33 100644
+--- a/src/ifcgeom/kernels/opencascade/sweep_utils.cpp
++++ b/src/ifcgeom/kernels/opencascade/sweep_utils.cpp
+@@ -1,6 +1,9 @@
+ #include "sweep_utils.h"
+ 
+ #include <gp_Ax2.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
++#include <TopTools_ListOfShape.hxx>
+ #include <Geom_Line.hxx>
+ #include <Geom_Circle.hxx>
+ 
+@@ -117,7 +120,7 @@ bool IfcGeom::util::is_single_linear_edge(const TopoDS_Wire & wire) {
+ 		return false;
+ 	}
+ 	double u, v;
+-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
++	Handle(Geom_Curve) crv = BRep_Tool::Curve(e, u, v);
+ 	return crv->DynamicType() == STANDARD_TYPE(Geom_Line);
+ }
+ 
+@@ -132,7 +135,7 @@ bool IfcGeom::util::is_single_circular_edge(const TopoDS_Wire & wire) {
+ 		return false;
+ 	}
+ 	double u, v;
+-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
++	Handle(Geom_Curve) crv = BRep_Tool::Curve(e, u, v);
+ 	return crv->DynamicType() == STANDARD_TYPE(Geom_Circle);
+ }
+ 
+@@ -140,7 +143,7 @@ void IfcGeom::util::process_sweep_as_extrusion(const TopoDS_Wire & wire, const T
+ 	TopExp_Explorer exp(wire, TopAbs_EDGE);
+ 	TopoDS_Edge e = TopoDS::Edge(exp.Current());
+ 	double u, v;
+-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
++	Handle(Geom_Curve) crv = BRep_Tool::Curve(e, u, v);
+ 	const auto& dir = Handle(Geom_Line)::DownCast(crv)->Position().Direction();
+ 	// OCCT line is normalized so diff in parametric coords equals length
+ 	const double depth = std::abs(u - v);
+@@ -153,7 +156,7 @@ void IfcGeom::util::process_sweep_as_revolution(const TopoDS_Wire & wire, const
+ 	TopExp_Explorer exp(wire, TopAbs_EDGE);
+ 	TopoDS_Edge e = TopoDS::Edge(exp.Current());
+ 	double u, v;
+-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
++	Handle(Geom_Curve) crv = BRep_Tool::Curve(e, u, v);
+ 	auto circ = Handle(Geom_Circle)::DownCast(crv);
+ 	// @todo we could be extruding the wire only when we know this is an intermediate edge.
+ 	const double depth = std::abs(u - v);
+@@ -269,7 +272,7 @@ void IfcGeom::util::segment_adjacent_non_linear(const TopoDS_Wire & wire, std::v
+ 
+ 	for (int i = 0; i < (int)sorted_edges.size() - 1; ++i) {
+ 		const auto& e = sorted_edges[i];
+-		Handle_Geom_Curve crv = BRep_Tool::Curve(e, u, v);
++		Handle(Geom_Curve) crv = BRep_Tool::Curve(e, u, v);
+ 		const bool is_linear = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
+ 
+ 		const auto& f = sorted_edges[i + 1];
+diff --git a/src/ifcgeom/kernels/opencascade/wire_builder.cpp b/src/ifcgeom/kernels/opencascade/wire_builder.cpp
+index 52e912d..cd4833d 100644
+--- a/src/ifcgeom/kernels/opencascade/wire_builder.cpp
++++ b/src/ifcgeom/kernels/opencascade/wire_builder.cpp
+@@ -4,6 +4,9 @@
+ #include "../../../ifcgeom/ConversionSettings.h"
+ 
+ #include <TopExp.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
++#include <TopTools_ListOfShape.hxx>
+ #include <TopoDS.hxx>
+ #include <BRep_Tool.hxx>
+ #include <BRep_Builder.hxx>
+@@ -81,7 +84,7 @@ double IfcGeom::util::deflection_for_approximating_circle(double radius, double
+ 	return -radius * std::cos(1. / 2. * param) * std::cos(param) - radius * std::sin(1. / 2. * param) * std::sin(param) + radius;
+ }
+ 
+-bool IfcGeom::util::create_edge_over_curve_with_log_messages(const Handle_Geom_Curve & crv, const double eps, const gp_Pnt & p1, const gp_Pnt & p2, TopoDS_Edge & result) {
++bool IfcGeom::util::create_edge_over_curve_with_log_messages(const Handle(Geom_Curve) & crv, const double eps, const gp_Pnt & p1, const gp_Pnt & p2, TopoDS_Edge & result) {
+ 	if (crv->IsClosed() && p1.Distance(p2) <= eps) {
+ 		BRepBuilderAPI_MakeEdge me(crv);
+ 		if (me.IsDone()) {
+diff --git a/src/ifcgeom/kernels/opencascade/wire_builder.h b/src/ifcgeom/kernels/opencascade/wire_builder.h
+index 34178b8..44d7e69 100644
+--- a/src/ifcgeom/kernels/opencascade/wire_builder.h
++++ b/src/ifcgeom/kernels/opencascade/wire_builder.h
+@@ -23,6 +23,8 @@
+ #include "../../../ifcparse/IfcBaseClass.h"
+ 
+ #include <Geom_Curve.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_ListOfShape.hxx>
+ 
+ #include <TopoDS_Vertex.hxx>
+ #include <TopoDS_Edge.hxx>
+@@ -98,7 +100,7 @@ namespace IfcGeom {
+ 
+ 		double deflection_for_approximating_circle(double radius, double param);
+ 
+-		bool create_edge_over_curve_with_log_messages(const Handle_Geom_Curve& crv, const double eps, const gp_Pnt& p1, const gp_Pnt& p2, TopoDS_Edge& result);
++		bool create_edge_over_curve_with_log_messages(const Handle(Geom_Curve)& crv, const double eps, const gp_Pnt& p1, const gp_Pnt& p2, TopoDS_Edge& result);
+ 	}
+ }
+ 
+diff --git a/src/ifcgeom/kernels/opencascade/wire_utils.cpp b/src/ifcgeom/kernels/opencascade/wire_utils.cpp
+index 7977132..9c01b9b 100644
+--- a/src/ifcgeom/kernels/opencascade/wire_utils.cpp
++++ b/src/ifcgeom/kernels/opencascade/wire_utils.cpp
+@@ -8,6 +8,12 @@
+ #include "IfcGeomTree.h"
+ 
+ #include <TopExp.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_IndexedMapOfShape.hxx>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TColStd_SequenceOfReal.hxx>
++#include <TColgp_SequenceOfPnt.hxx>
++#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+ #include <TopoDS.hxx>
+ #include <TopoDS_Iterator.hxx>
+ #include <ShapeFix_Wire.hxx>
+@@ -210,11 +216,11 @@ IfcGeom::util::triangulate_wire_result IfcGeom::util::triangulate_wire(const std
+ 
+ 	int n123[3];
+ 	TopLoc_Location loc;
+-	Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
++	Handle(Poly_Triangulation) tri = BRep_Tool::Triangulation(face, loc);
+ 
+ 	if (!tri.IsNull()) {
+ 
+-		const Poly_Array1OfTriangle& triangles = tri->Triangles();
++		const NCollection_Array1<Poly_Triangle>& triangles = tri->InternalTriangles();
+ 		for (int i = 1; i <= triangles.Length(); ++i) {
+ 			if (face.Orientation() == TopAbs_REVERSED)
+ 				triangles(i).Get(n123[2], n123[1], n123[0]);
+@@ -508,7 +514,7 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfS
+ 								// Substitute with a new edge from/to the intersection point
+ 								if (p1.Distance(p2) > eps_real * 2) {
+ 									double _, __;
+-									Handle_Geom_Curve crv = BRep_Tool::Curve(e, _, __);
++									Handle(Geom_Curve) crv = BRep_Tool::Curve(e, _, __);
+ 									BRepBuilderAPI_MakeEdge me(crv, p1, p2);
+ 									TopoDS_Edge ed = me.Edge();
+ 									mw.Add(ed);
+@@ -601,7 +607,7 @@ bool IfcGeom::util::wire_to_sequence_of_point(const TopoDS_Wire& w, TColgp_Seque
+ 	TopExp_Explorer exp(w, TopAbs_EDGE);
+ 	for (; exp.More(); exp.Next()) {
+ 		double a, b;
+-		Handle_Geom_Curve crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
++		Handle(Geom_Curve) crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
+ 		if (crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
+ 			return false;
+ 		}
+diff --git a/src/serializers/SvgSerializer.cpp b/src/serializers/SvgSerializer.cpp
+index d5c65b1..7d843c4 100644
+--- a/src/serializers/SvgSerializer.cpp
++++ b/src/serializers/SvgSerializer.cpp
+@@ -24,6 +24,8 @@
+ #include "../ifcgeom/abstract_mapping.h"
+ 
+ #include <string>
++// OCCT 8.0.0: explicit includes (reduced transitive includes / deprecated collection aliases)
++#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
+ #include <fstream>
+ #include <cstdio>
+ #include <limits>
+@@ -134,7 +136,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boos
+ 			Handle(Geom2d_Curve) curve2d;
+ 			if (curve.IsNull()) {
+ 				TopLoc_Location loc;
+-				Handle_Geom_Surface surf;
++				Handle(Geom_Surface) surf;
+ 
+ 				BRep_Tool::CurveOnSurface(edge, curve2d, surf, loc, u1, u2);
+ 

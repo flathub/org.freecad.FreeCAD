@@ -1,0 +1,25 @@
+diff --git a/ccx_2.23/src/move.f b/ccx_2.23/src/move.f
+index e62893c..d3b9cf6 100644
+--- a/ccx_2.23/src/move.f
++++ b/ccx_2.23/src/move.f
+@@ -36,18 +36,14 @@ C>
+       subroutine move(source, target, iostat)
+ !
+ !     moves a file on disk
+-!
+-#if defined(__INTEL_COMPILER)
+-      use ifport, only: rename
+-#endif
+ !
+       implicit none
+ !
+       character*132 source, target
+       integer iostat
+ !
+-#if defined(__GFORTRAN__) || defined(__INTEL_COMPILER)
+-!     use GNU extension or IFPORT library function
++#if defined(__GFORTRAN__)
++!     use GNU extension rename()
+       iostat = rename(source, target)
+ #else
+ !     fall back to copying and deleting

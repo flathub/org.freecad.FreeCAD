@@ -1,0 +1,247 @@
+# Reject malformed sets, sections and steps
+#
+#   - noelsets: replace end value by ne, not nk; reject nonpositive GENERATE bounds
+#   - calinput: make *END STEP without a preceding *STEP a fatal error
+#   - solid/shell/beamsections: reject elements of the set that are not defined
+#   - nodes: reject a nonpositive node number on a *NODE data line
+#
+# Found by fuzzing ccx with malformed variants of 518 input decks under
+# AddressSanitizer, and by review of the code around each crash.
+
+diff --git a/ccx_2.23/src/beamsections.f b/ccx_2.23/src/beamsections.f
+index 1511253..0f65902 100644
+--- a/ccx_2.23/src/beamsections.f
++++ b/ccx_2.23/src/beamsections.f
+@@ -20,7 +20,7 @@
+      &  ialset,nset,ielmat,matname,nmat,ielorien,orname,norien,
+      &  thicke,ipkon,iponor,xnor,ixfree,
+      &  offset,lakon,irstrt,istep,istat,n,iline,ipol,inl,ipoinp,inp,
+-     &  ipoinpc,mi,nelcon,ier)
++     &  ipoinpc,mi,nelcon,ier,ne)
+ !
+ !     reading the input deck: *BEAM SECTION
+ !
+@@ -40,7 +40,7 @@
+      &  ielorien(mi(3),*),ipkon(*),iline,ipol,inl,ipoinp(2,*),
+      &  inp(3,*),nset,nmat,norien,istep,istat,n,key,i,j,k,l,imaterial,
+      &  iorientation,ipos,m,iponor(2,*),ixfree,
+-     &  indexx,indexe,irstrt(*),nelcon(2,*),ier
++     &  indexx,indexe,irstrt(*),nelcon(2,*),ier,ne
+ !
+       real*8 thicke(mi(3),*),thickness1,thickness2,p(3),xnor(*),
+      &  offset(2,*),offset1,offset2,dd
+@@ -165,6 +165,20 @@
+          return
+       endif
+ !
++!     check that all elements of the set are defined
++!
++      do j=istartset(i),iendset(i)
++         if(ialset(j).gt.ne) then
++            write(*,*) '*ERROR reading *BEAM SECTION: element ',
++     &           ialset(j)
++            write(*,*) '       of element set ',elset(1:ipos-1)
++            write(*,*) '       has not been defined'
++            call inputerror(inpc,ipoinpc,iline,
++     &           "*BEAM SECTION%",ier)
++            return
++         endif
++      enddo
++!
+ !     assigning the elements of the set the appropriate material,
+ !     orientation number, section and offset(s)
+ !
+diff --git a/ccx_2.23/src/calinput.f b/ccx_2.23/src/calinput.f
+index f27e88f..aeebb1b 100644
+--- a/ccx_2.23/src/calinput.f
++++ b/ccx_2.23/src/calinput.f
+@@ -317,7 +317,7 @@
+      &         ialset,nset,ielmat,matname,nmat,ielorien,orname,norien,
+      &         thicke,ipkon,iponor,xnor,ixfree,
+      &         offset,lakon,irstrt,istep,istat,n,iline,ipol,inl,
+-     &         ipoinp,inp,ipoinpc,mi,nelcon,ier)
++     &         ipoinp,inp,ipoinpc,mi,nelcon,ier,ne)
+         endif
+ !     
+       elseif(textpart(1)(1:10).eq.'*BOUNDARYF') then
+@@ -1066,14 +1066,14 @@ c
+      &       ialset,nset,ielmat,matname,nmat,ielorien,orname,
+      &       norien,thicke,kon,ipkon,offset,irstrt,istep,istat,n,
+      &       iline,ipol,inl,ipoinp,inp,lakon,iaxial,ipoinpc,mi,
+-     &       icomposite,nelcon,ier)
++     &       icomposite,nelcon,ier,ne)
+ !     
+       elseif(textpart(1)(1:13).eq.'*SOLIDSECTION') then
+         call solidsections(inpc,textpart,set,istartset,iendset,
+      &       ialset,nset,ielmat,matname,nmat,ielorien,orname,
+      &       norien,lakon,thicke,kon,ipkon,irstrt,istep,istat,n,iline,
+      &       ipol,inl,ipoinp,inp,cs,mcs,iaxial,ipoinpc,mi,co,
+-     &       ixfree,xnor,iponor,ier,orab)
++     &       ixfree,xnor,iponor,ier,orab,ne)
+ !     
+       elseif(textpart(1)(1:20).eq.'*SPECIFICGASCONSTANT') then
+         call specificgasconstants(inpc,textpart,shcon,nshcon,
+@@ -1270,14 +1270,6 @@ c
+         write(*,*) '       (*DYNAMIC,EXPLICIT)'
+         ier=1
+       endif
+-!     
+-      if(ier.ge.1) then
+-        write(*,*) '*ERROR in calinput: at least one fatal'
+-        write(*,*) '       error message while reading the'
+-        write(*,*) '       input deck: CalculiX stops.'
+-        write(*,*)
+-        call exit(201)
+-      endif
+ !     
+ !     check whether the *END STEP card was preceded by a *STEP card    
+ !     
+@@ -1285,6 +1277,15 @@ c
+         write(*,*) '*ERROR in calinput: *END STEP card in step ',
+      &       istep+1
+         write(*,*) '       was not preceded by a *STEP card'
++        ier=1
++      endif
++!     
++      if(ier.ge.1) then
++        write(*,*) '*ERROR in calinput: at least one fatal'
++        write(*,*) '       error message while reading the'
++        write(*,*) '       input deck: CalculiX stops.'
++        write(*,*)
++        call exit(201)
+       endif
+ !     
+ !     reorganizing the input in field inpc
+diff --git a/ccx_2.23/src/nodes.f b/ccx_2.23/src/nodes.f
+index 3953aab..dfd5c30 100644
+--- a/ccx_2.23/src/nodes.f
++++ b/ccx_2.23/src/nodes.f
+@@ -131,6 +131,13 @@ ccc   to remove end
+         read(textpart(1)(1:10),'(i10)',iostat=istat) i
+         if(istat.gt.0) then
+           call inputerror(inpc,ipoinpc,iline,
++     &         "*NODE%",ier)
++          return
++        endif
++        if(i.le.0) then
++          write(*,*) '*ERROR reading *NODE: node number ',i
++          write(*,*) '       is not positive'
++          call inputerror(inpc,ipoinpc,iline,
+      &         "*NODE%",ier)
+           return
+         endif
+diff --git a/ccx_2.23/src/noelsets.f b/ccx_2.23/src/noelsets.f
+index 6c53142..23f310c 100644
+--- a/ccx_2.23/src/noelsets.f
++++ b/ccx_2.23/src/noelsets.f
+@@ -214,6 +214,14 @@ ccc   to remove end
+               return
+             endif
+           enddo
++          if((ialset(nalset+1).le.0).or.(ialset(nalset+2).le.0)) then
++            write(*,*) 
++     &           '*ERROR reading *NSET/ELSET: starting or end value in'
++            write(*,*) '       set ',
++     &           set(iset)(1:index(set(iset),' ')-2),' <=0'
++            ier=1
++            return
++          endif
+           if(kode.eq.0) then
+             if(ialset(nalset+1).gt.nk) then
+               write(*,*) 
+@@ -250,7 +258,7 @@ ccc   to remove end
+               write(*,*) '         set ',
+      &             set(iset)(1:index(set(iset),' ')-2),' > ne;'
+               write(*,*) '         replaced by ne'
+-              ialset(nalset+2)=nk
++              ialset(nalset+2)=ne
+             elseif(ialset(nalset+3).le.0) then
+               write(*,*) '*ERROR reading *NSET/ELSET: increment in'
+               write(*,*) '       set ',
+diff --git a/ccx_2.23/src/shellsections.f b/ccx_2.23/src/shellsections.f
+index 3d64ab3..4024f9c 100644
+--- a/ccx_2.23/src/shellsections.f
++++ b/ccx_2.23/src/shellsections.f
+@@ -19,7 +19,8 @@
+       subroutine shellsections(inpc,textpart,set,istartset,iendset,
+      &     ialset,nset,ielmat,matname,nmat,ielorien,orname,norien,
+      &     thicke,kon,ipkon,offset,irstrt,istep,istat,n,iline,ipol,
+-     &     inl,ipoinp,inp,lakon,iaxial,ipoinpc,mi,icomposite,nelcon,ier)
++     &     inl,ipoinp,inp,lakon,iaxial,ipoinpc,mi,icomposite,nelcon,ier,
++     &     ne)
+ !     
+ !     reading the input deck: *SHELL SECTION
+ !     
+@@ -37,7 +38,7 @@
+      &     ielorien(mi(3),*),kon(*),ipkon(*),indexe,irstrt(*),nset,nmat,
+      &     norien,nlayer,iset,icomposite,nelcon(2,*),ier,numnod,id,
+      &     istep,istat,n,key,i,j,k,l,imaterial,iorientation,ipos,
+-     &     iline,ipol,inl,ipoinp(2,*),inp(3,*),iaxial,ipoinpc(0:*)
++     &     iline,ipol,inl,ipoinp(2,*),inp(3,*),iaxial,ipoinpc(0:*),ne
+ !     
+       real*8 thicke(mi(3),*),thickness,offset(2,*),offset1
+ !     
+@@ -146,6 +147,20 @@ c      enddo
+         return
+       endif
+       iset=i
++!
++!     check that all elements of the set are defined
++!
++      do j=istartset(iset),iendset(iset)
++         if(ialset(j).gt.ne) then
++            write(*,*) '*ERROR reading *SHELL SECTION: element ',
++     &           ialset(j)
++            write(*,*) '       of element set ',elset(1:ipos-1)
++            write(*,*) '       has not been defined'
++            call inputerror(inpc,ipoinpc,iline,
++     &           "*SHELL SECTION%",ier)
++            return
++         endif
++      enddo
+ !     
+ c     if(.not.nodalthickness) then
+       call getnewline(inpc,textpart,istat,n,key,iline,ipol,inl,
+diff --git a/ccx_2.23/src/solidsections.f b/ccx_2.23/src/solidsections.f
+index 0c5364e..18bbef2 100644
+--- a/ccx_2.23/src/solidsections.f
++++ b/ccx_2.23/src/solidsections.f
+@@ -20,7 +20,7 @@
+      &  ialset,nset,ielmat,matname,nmat,ielorien,orname,norien,
+      &  lakon,thicke,kon,ipkon,irstrt,istep,istat,n,iline,ipol,inl,
+      &  ipoinp,inp,cs,mcs,iaxial,ipoinpc,mi,co,ixfree,xnor,iponor,
+-     &  ier,orab)
++     &  ier,orab,ne)
+ !
+ !     reading the input deck: *SOLID SECTION
+ !
+@@ -39,7 +39,7 @@
+      &  norien,ielem,node1,node2,m,indexx,ixfree,iponor(2,*),id,
+      &  istep,istat,n,key,i,j,k,l,imaterial,iorientation,ipos,
+      &  iline,ipol,inl,ipoinp(2,*),inp(3,*),mcs,iaxial,ipoinpc(0:*),
+-     &  ier,numnod
++     &  ier,numnod,ne
+ !
+       real*8 thicke(mi(3),*),thickness,pi,cs(18,*),xn(3),co(3,*),p(3),
+      &     dd,xnor(*),orab(7,*)
+@@ -154,6 +154,20 @@ c      enddo
+          return
+       endif
+ !
++!     check that all elements of the set are defined
++!
++      do j=istartset(i),iendset(i)
++         if(ialset(j).gt.ne) then
++            write(*,*) '*ERROR reading *SOLID SECTION: element ',
++     &           ialset(j)
++            write(*,*) '       of element set ',elset(1:ipos-1)
++            write(*,*) '       has not been defined'
++            call inputerror(inpc,ipoinpc,iline,
++     &           "*SOLID SECTION%",ier)
++            return
++         endif
++      enddo
++!
+ !     assigning the elements of the set the appropriate material
+ !     and orientation number
+ !

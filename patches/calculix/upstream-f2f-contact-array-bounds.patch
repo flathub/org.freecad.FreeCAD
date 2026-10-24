@@ -1,0 +1,52 @@
+diff --git a/ccx_2.23/src/springforc_f2f.f b/ccx_2.23/src/springforc_f2f.f
+index 4fdf5fc..3a82c23 100644
+--- a/ccx_2.23/src/springforc_f2f.f
++++ b/ccx_2.23/src/springforc_f2f.f
+@@ -35,7 +35,7 @@
+      &  nmethod,ne0,nstate_,ielas,jfaces,kscale,konl(26),
+      &  igauss,nopes,nopem,nopep,iout,nelem,mscalmethod
+ !
+-      real*8 xl(3,10),stiff(21),t1l,al(3),vl(0:mi(2),19),stickslope,
++      real*8 xl(3,19),stiff(21),t1l,al(3),vl(0:mi(2),19),stickslope,
+      &  pl(3,19),xn(3),alpha,beta,fnl(3,19),tp(3),te(3),ftrial(3),
+      &  t(3),dftrial,elcon(0:ncmat_,ntmat_,*),pproj(3),clear,
+      &  xi,et,elconloc(*),plconloc(82),xk,val,xiso(20),yiso(20),
+diff --git a/ccx_2.23/src/objective_shapeener_dx.f b/ccx_2.23/src/objective_shapeener_dx.f
+index e90da45..3964cc4 100644
+--- a/ccx_2.23/src/objective_shapeener_dx.f
++++ b/ccx_2.23/src/objective_shapeener_dx.f
+@@ -57,7 +57,7 @@
+      &     elcon(0:ncmat_,ntmat_,*),rhcon(0:1,ntmat_,*),xs2(3,7),
+      &     alcon(0:6,ntmat_,*),vini(0:mi(2),*),thickness,xthi(3,3),
+      &     alzero(*),orab(7,*),stiff(21),rho,qa(4),elineng(6),
+-     &     fnl(3,10),beta(6),q(0:mi(2),20),xl2(3,8),vthj,
++     &     fnl(3,19),beta(6),q(0:mi(2),20),xl2(3,8),vthj,
+      &     vkl(0:3,3),t0(*),t1(*),prestr(6,mi(1),*),
+      &     ckl(3,3),vold(0:mi(2),*),eloc(9),veold(0:mi(2),*),
+      &     springarea(2,*),elconloc(ncmat_),eth(6),xkl(3,3),
+diff --git a/ccx_2.23/src/resultsmech.f b/ccx_2.23/src/resultsmech.f
+index 92dc9a0..886c33e 100644
+--- a/ccx_2.23/src/resultsmech.f
++++ b/ccx_2.23/src/resultsmech.f
+@@ -56,7 +56,7 @@
+      &     elcon(0:ncmat_,ntmat_,*),rhcon(0:1,ntmat_,*),xs2(3,7),
+      &     alcon(0:6,ntmat_,*),vini(0:mi(2),*),thickness,
+      &     alzero(*),orab(7,*),stiff(21),rho,fn(0:mi(2),*),
+-     &     fnl(3,10),skl(3,3),beta(6),q(0:mi(2),20),xl2(3,8),
++     &     fnl(3,19),skl(3,3),beta(6),q(0:mi(2),20),xl2(3,8),
+      &     vkl(0:3,3),t0(*),t1(*),prestr(6,mi(1),*),eme(6,mi(1),*),
+      &     ckl(3,3),vold(0:mi(2),*),eloc(6),veold(0:mi(2),*),
+      &     springarea(2,*),elconloc(ncmat_),eth(6),xkl(3,3),
+diff --git a/ccx_2.23/src/resultsmech_se.f b/ccx_2.23/src/resultsmech_se.f
+index ce5c895..39d725a 100644
+--- a/ccx_2.23/src/resultsmech_se.f
++++ b/ccx_2.23/src/resultsmech_se.f
+@@ -57,7 +57,7 @@
+      &     elcon(0:ncmat_,ntmat_,*),rhcon(0:1,ntmat_,*),xs2(3,7),
+      &     alcon(0:6,ntmat_,*),vini(0:mi(2),*),thickness,
+      &     alzero(*),orab(7,*),stiff(21),rho,fn(0:mi(2),*),
+-     &     fnl(3,10),skl(3,3),beta(6),xl2(3,8),qa(4),xthi(3,3),
++     &     fnl(3,19),skl(3,3),beta(6),xl2(3,8),qa(4),xthi(3,3),
+      &     vkl(0:3,3),t0(*),t1(*),prestr(6,mi(1),*),eme(6,mi(1),*),
+      &     ckl(3,3),vold(0:mi(2),*),eloc(9),veold(0:mi(2),*),
+      &     springarea(2,*),elconloc(ncmat_),eth(6),xkl(3,3),

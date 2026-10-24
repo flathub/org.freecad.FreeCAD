@@ -1,0 +1,369 @@
+# Require ELSET on section cards; reject load node 0; bound two iterations; guard *COUPLING
+#
+#   - Section and discrete element cards: require the ELSET parameter
+#   - cloads, cfluxs: reject node numbers below 1
+#   - hnorm, friction_coefficient: stop after 1000 iterations
+#   - membranesections: keep the ELSET error message within column 72
+#   - couplings: skip face nodes of an element whose definition failed
+#
+# Found by fuzzing ccx with malformed variants of 518 input decks under
+# AddressSanitizer, and by review of the code around each crash.
+
+diff --git a/ccx_2.23/src/beamgeneralsections.f b/ccx_2.23/src/beamgeneralsections.f
+index 222eb56..a77d73e 100644
+--- a/ccx_2.23/src/beamgeneralsections.f
++++ b/ccx_2.23/src/beamgeneralsections.f
+@@ -63,6 +63,7 @@
+       ipos=1
+       npropstart=nprop
+ !     
++      ipos=0
+       do i=2,n
+         if(textpart(i)(1:9).eq.'MATERIAL=') then
+           material=textpart(i)(10:89)
+@@ -164,6 +165,13 @@ c     iorientation=0
+ c     do i=1,nset
+ c     if(set(i).eq.elset) exit
+ c     enddo
++      if(ipos.eq.0) then
++        write(*,*) '*ERROR reading *BEAM SECTION: no ELSET parameter'
++        call inputerror(inpc,ipoinpc,iline,
++     &       "*BEAM SECTION%",ier)
++        return
++      endif
++!
+       call cident81(set,elset,nset,id)
+       i=nset+1
+       if(id.gt.0) then
+diff --git a/ccx_2.23/src/cfluxs.f b/ccx_2.23/src/cfluxs.f
+index 0c063b4..e896d83 100644
+--- a/ccx_2.23/src/cfluxs.f
++++ b/ccx_2.23/src/cfluxs.f
+@@ -187,7 +187,7 @@ c            call reorderampl(amname,namta,nam)
+ !
+          read(textpart(1)(1:10),'(i10)',iostat=istat) l
+          if(istat.eq.0) then
+-            if(l.gt.nk) then
++            if((l.gt.nk).or.(l.lt.1)) then
+                write(*,*) '*ERROR reading *CFLUX: node ',l
+                write(*,*) '       is not defined'
+                ier=1
+diff --git a/ccx_2.23/src/cloads.f b/ccx_2.23/src/cloads.f
+index 8d4bb24..77e20bb 100644
+--- a/ccx_2.23/src/cloads.f
++++ b/ccx_2.23/src/cloads.f
+@@ -280,7 +280,7 @@
+ !     
+         read(textpart(1)(1:10),'(i10)',iostat=istat) l
+         if(istat.eq.0) then
+-          if(l.gt.nk) then
++          if((l.gt.nk).or.(l.lt.1)) then
+             write(*,*) '*ERROR reading *CLOAD: node ',l
+             write(*,*) '       is not defined'
+             ier=1
+diff --git a/ccx_2.23/src/couplings.f b/ccx_2.23/src/couplings.f
+index f9d9217..28fefdc 100644
+--- a/ccx_2.23/src/couplings.f
++++ b/ccx_2.23/src/couplings.f
+@@ -284,6 +284,11 @@
+               else
+                 node =ialset(j)
+               endif
++!
++!     a node outside 1..nk belongs to an element whose definition
++!     failed; that error was reported and ccx stops after the input
++!
++              if((node.lt.1).or.(node.gt.nk)) cycle
+ !     
+               call nident2(ics,node,npt,id)
+               if(id.gt.0) then
+@@ -593,6 +598,14 @@
+               nodef(i)=kon(indexe+ifaceq(i,jface))
+             enddo
+           endif
++!
++!     skip a face with a node outside 1..nk: its element's definition
++!     failed, that error was reported and ccx stops after the input
++!
++          do i=1,nopes
++            if((nodef(i).lt.1).or.(nodef(i).gt.nk)) exit
++          enddo
++          if(i.le.nopes) cycle
+ !     
+ !     loop over the nodes belonging to the face   
+ !     ics(1,*): surface node
+diff --git a/ccx_2.23/src/dashpots.f b/ccx_2.23/src/dashpots.f
+index 6821dcc..33dfd5a 100644
+--- a/ccx_2.23/src/dashpots.f
++++ b/ccx_2.23/src/dashpots.f
+@@ -65,6 +65,7 @@
+          matname(nmat)(i:i)=' '
+       enddo
+ !
++      ipos=0
+       do i=2,n
+          if(textpart(i)(1:6).eq.'ELSET=') then
+             elset=textpart(i)(7:86)
+@@ -203,6 +204,13 @@
+ c      do i=1,nset
+ c         if(set(i).eq.elset) exit
+ c      enddo
++      if(ipos.eq.0) then
++        write(*,*) '*ERROR reading *DASHPOT: no ELSET parameter'
++        call inputerror(inpc,ipoinpc,iline,
++     &       "*DASHPOT%",ier)
++        return
++      endif
++!
+       call cident81(set,elset,nset,id)
+       i=nset+1
+       if(id.gt.0) then
+diff --git a/ccx_2.23/src/friction_coefficient.f b/ccx_2.23/src/friction_coefficient.f
+index fdef996..e0b14b7 100644
+--- a/ccx_2.23/src/friction_coefficient.f
++++ b/ccx_2.23/src/friction_coefficient.f
+@@ -38,6 +38,8 @@
+ !     lambda: friction coefficient
+ !      
+       implicit none
++!
++      integer iter
+ !     
+       real*8 l,d,ks,reynolds,form_fact,lambda,alfa2,
+      &     rey_turb_min,rey_lam_max,lzd,dd,ds,friction,dfriction,
+@@ -63,7 +65,16 @@
+          friction=(-1.8d0*dlog10(6.9d0/4000.d0+(ksd/3.7d0)**1.11d0))
+      &        **(-2d0)
+ !     
++         iter=0
+          do
++            iter=iter+1
++            if(iter.gt.1000) then
++               write(*,*) '*ERROR in friction_coefficient:'
++               write(*,*) '       no convergence'
++               write(*,*) '       computing the friction coefficient'
++               write(*,*) '       (check the input values)'
++               call exit(201)
++            endif
+             ds=dsqrt(friction)
+             dd=2.51d0/(4000.d0*ds)+0.27d0*ksd
+             dfriction=(1.d0/ds+2.d0*dlog10(dd))*2.d0*friction*ds/
+@@ -108,7 +119,16 @@
+          friction=(-1.8d0*dlog10(6.9d0/reynolds+(ksd/3.7d0)
+      &        **1.11d0))**(-2d0)
+ !     
++         iter=0
+          do
++            iter=iter+1
++            if(iter.gt.1000) then
++               write(*,*) '*ERROR in friction_coefficient:'
++               write(*,*) '       no convergence'
++               write(*,*) '       computing the friction coefficient'
++               write(*,*) '       (check the input values)'
++               call exit(201)
++            endif
+             ds=dsqrt(friction)
+             dd=2.51d0/(reynolds*ds)+0.27d0*ksd
+             dfriction=(1.d0/ds+2.d0*dlog10(dd))*2.d0*friction*ds/
+diff --git a/ccx_2.23/src/gaps.f b/ccx_2.23/src/gaps.f
+index f7a78da..7b32b3f 100644
+--- a/ccx_2.23/src/gaps.f
++++ b/ccx_2.23/src/gaps.f
+@@ -60,6 +60,7 @@
+          matname(nmat)(i:i)=' '
+       enddo
+ !
++      ipos=0
+       do i=2,n
+          if(textpart(i)(1:6).eq.'ELSET=') then
+             elset=textpart(i)(7:86)
+@@ -134,6 +135,13 @@
+ c      do i=1,nset
+ c         if(set(i).eq.elset) exit
+ c      enddo
++      if(ipos.eq.0) then
++        write(*,*) '*ERROR reading *GAP: no ELSET parameter'
++        call inputerror(inpc,ipoinpc,iline,
++     &       "*GAP%",ier)
++        return
++      endif
++!
+       call cident81(set,elset,nset,id)
+       i=nset+1
+       if(id.gt.0) then
+diff --git a/ccx_2.23/src/hnorm.f b/ccx_2.23/src/hnorm.f
+index 829e133..b19c9bd 100644
+--- a/ccx_2.23/src/hnorm.f
++++ b/ccx_2.23/src/hnorm.f
+@@ -39,6 +39,8 @@
+ !     he:        normal depth
+ !
+       implicit none
++!
++      integer iter
+ !      
+       real*8 xflow,rho,b,dg,s0,he,theta,tth,friction,xks,henew,
+      &     third,threetenth,fourtenth,cthi,c1
+@@ -78,7 +80,15 @@
+ !        
+         he=(c1/(b*b))**third
+ !        
++        iter=0
+         do
++          iter=iter+1
++          if(iter.gt.1000) then
++            write(*,*) '*ERROR in hnorm: no convergence'
++            write(*,*) '       computing the normal water depth'
++            write(*,*) '       (check the input values)'
++            call exit(201)
++          endif
+           henew=(c1*(b+2.d0*he*cthi))**third/(b+he*tth)
+           if(dabs(henew-he).lt.1.d-3*he) exit
+           he=henew
+@@ -103,7 +113,15 @@
+ !        
+         he=c1*b**(fourtenth-1.d0)
+ !        
++        iter=0
+         do
++          iter=iter+1
++          if(iter.gt.1000) then
++            write(*,*) '*ERROR in hnorm: no convergence'
++            write(*,*) '       computing the normal water depth'
++            write(*,*) '       (check the input values)'
++            call exit(201)
++          endif
+           henew=c1*(b+2d0*he*cthi)**fourtenth/(b+he*tth)
+           if(dabs(henew-he).lt.1.d-3*he) exit
+           he=henew
+diff --git a/ccx_2.23/src/masss.f b/ccx_2.23/src/masss.f
+index c50ccb5..1d10083 100644
+--- a/ccx_2.23/src/masss.f
++++ b/ccx_2.23/src/masss.f
+@@ -58,6 +58,7 @@
+          matname(nmat)(i:i)=' '
+       enddo
+ !
++      ipos=0
+       do i=2,n
+          if(textpart(i)(1:6).eq.'ELSET=') then
+             elset=textpart(i)(7:86)
+@@ -115,6 +116,13 @@
+ c      do i=1,nset
+ c         if(set(i).eq.elset) exit
+ c      enddo
++      if(ipos.eq.0) then
++        write(*,*) '*ERROR reading *MASS: no ELSET parameter'
++        call inputerror(inpc,ipoinpc,iline,
++     &       "*MASS%",ier)
++        return
++      endif
++!
+       call cident81(set,elset,nset,id)
+       i=nset+1
+       if(id.gt.0) then
+diff --git a/ccx_2.23/src/membranesections.f b/ccx_2.23/src/membranesections.f
+index ca43326..eb58576 100644
+--- a/ccx_2.23/src/membranesections.f
++++ b/ccx_2.23/src/membranesections.f
+@@ -55,6 +55,7 @@
+       material(1:1)=' '
+       orientation(1:1)=' '
+ !
++      ipos=0
+       do i=2,n
+          if(textpart(i)(1:9).eq.'MATERIAL=') then
+             material=textpart(i)(10:89)
+@@ -136,6 +137,14 @@ c         iorientation=0
+ c      do i=1,nset
+ c         if(set(i).eq.elset) exit
+ c      enddo
++      if(ipos.eq.0) then
++        write(*,*) '*ERROR reading *MEMBRANE SECTION:'
++        write(*,*) '       no ELSET parameter'
++        call inputerror(inpc,ipoinpc,iline,
++     &       "*MEMBRANE SECTION%",ier)
++        return
++      endif
++!
+       call cident81(set,elset,nset,id)
+       i=nset+1
+       if(id.gt.0) then
+diff --git a/ccx_2.23/src/shellsections.f b/ccx_2.23/src/shellsections.f
+index 4024f9c..f9efd20 100644
+--- a/ccx_2.23/src/shellsections.f
++++ b/ccx_2.23/src/shellsections.f
+@@ -56,6 +56,7 @@
+       material(1:1)=' '
+       orientation(1:1)=' '
+ !     
++      ipos=0
+       do i=2,n
+         if(textpart(i)(1:9).eq.'MATERIAL=') then
+           material=textpart(i)(10:89)
+@@ -131,6 +132,13 @@
+ c      do i=1,nset
+ c        if(set(i).eq.elset) exit
+ c      enddo
++      if(ipos.eq.0) then
++        write(*,*) '*ERROR reading *SHELL SECTION: no ELSET parameter'
++        call inputerror(inpc,ipoinpc,iline,
++     &       "*SHELL SECTION%",ier)
++        return
++      endif
++!
+       call cident81(set,elset,nset,id)
+       i=nset+1
+       if(id.gt.0) then
+diff --git a/ccx_2.23/src/springs.f b/ccx_2.23/src/springs.f
+index 123aa9a..19ed27b 100644
+--- a/ccx_2.23/src/springs.f
++++ b/ccx_2.23/src/springs.f
+@@ -68,6 +68,7 @@
+         matname(nmat)(i:i)=' '
+       enddo
+ !     
++      ipos=0
+       do i=2,n
+         if(textpart(i)(1:9).eq.'NONLINEAR') then
+           linear=.false.
+@@ -325,6 +326,13 @@
+ c     do i=1,nset
+ c     if(set(i).eq.elset) exit
+ c     enddo
++      if(ipos.eq.0) then
++        write(*,*) '*ERROR reading *SPRING: no ELSET parameter'
++        call inputerror(inpc,ipoinpc,iline,
++     &       "*SPRING%",ier)
++        return
++      endif
++!
+       call cident81(set,elset,nset,id)
+       i=nset+1
+       if(id.gt.0) then
+diff --git a/ccx_2.23/src/usersections.f b/ccx_2.23/src/usersections.f
+index 4f4d0b2..0b4623f 100644
+--- a/ccx_2.23/src/usersections.f
++++ b/ccx_2.23/src/usersections.f
+@@ -50,6 +50,7 @@
+ !     
+       ndprop=0
+ !     
++      ipos=0
+       do i=2,n
+         if(textpart(i)(1:9).eq.'MATERIAL=') then
+           material=textpart(i)(10:89)
+@@ -106,6 +107,13 @@
+ c      do i=1,nset
+ c        if(set(i).eq.elset) exit
+ c      enddo
++      if(ipos.eq.0) then
++        write(*,*) '*ERROR reading *USER SECTION: no ELSET parameter'
++        call inputerror(inpc,ipoinpc,iline,
++     &       "*USER SECTION%",ier)
++        return
++      endif
++!
+       call cident81(set,elset,nset,id)
+       i=nset+1
+       if(id.gt.0) then

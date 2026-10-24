@@ -1,0 +1,12 @@
+diff --git a/ccx_2.23/src/Makefile.inc b/ccx_2.23/src/Makefile.inc
+index 21e9baa..cf809b6 100644
+--- a/ccx_2.23/src/Makefile.inc
++++ b/ccx_2.23/src/Makefile.inc
+@@ -1064,7 +1064,6 @@ interpolatestatemain.c \
+ interpoltetmain.c \
+ linstatic.c \
+ mafilldmssmain.c \
+-mafillmm.c \
+ mafillsmasmain.c \
+ mafillsmmain.c \
+ mafillsmmain_se.c \

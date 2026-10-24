@@ -529,7 +529,52 @@ modules:
         sha256: 9c88385c10fb04f5dc6c4e98027a51bebdd8aee3920e05190d6c1dd08357d6e7
         strip-components: 2
       - type: patch
-        path: patches/calculix-cxx-paths.patch
+        paths:
+          - patches/calculix-cxx-paths.patch
+        # patches from conda-forge package, should be dropped once they land on a release, see:
+        # https://github.com/conda-forge/calculix-feedstock/pull/39
+        # https://github.com/conda-forge/calculix-feedstock/pull/40
+        # https://github.com/conda-forge/calculix-feedstock/pull/41
+        # https://github.com/conda-forge/calculix-feedstock/pull/42
+          - patches/calculix/avoid-ifport.patch
+          - patches/calculix/fix-readnewmesh-return.patch
+          - patches/calculix/upstream-f2f-contact-array-bounds.patch
+          - patches/calculix/upstream-frictionless-contact-slip.patch
+          - patches/calculix/upstream-nonlinmpc-straight-mpc.patch
+          - patches/calculix/upstream-mohrcoulomb-degenerate-return.patch
+          - patches/calculix/upstream-readfrd-return-value.patch
+          - patches/calculix/upstream-locale-numeric.patch
+          - patches/calculix/upstream-makefile-inc-mafillmm.patch
+          - patches/calculix/fix-cfd-threaded-boundary-conditions.patch
+          - patches/calculix/fix-cfd-small-mesh-threads.patch
+          - patches/calculix/upstream-initial-conditions-solution.patch
+          - patches/calculix/upstream-boundary-fixed-cylindrical.patch
+          - patches/calculix/upstream-gen3dnor-expansion-normals.patch
+          - patches/calculix/upstream-materialdata-th-density.patch
+          - patches/calculix/upstream-nonlingeo-intscheme.patch
+          - patches/calculix/upstream-c3d8r-stable-time-increment.patch
+          - patches/calculix/upstream-allocation-debug-print.patch
+          - patches/calculix/upstream-friction-stick-slope.patch
+          - patches/calculix/upstream-e-c3d-rhs-th-dflux-arguments.patch
+          - patches/calculix/upstream-null-array-guards.patch
+          - patches/calculix/fix-2d-rotational-dofs.patch
+          - patches/calculix/fix-missing-ier-arguments.patch
+          - patches/calculix/fix-extrapolate-se-beam-sections.patch
+          - patches/calculix/fix-electromagnetics-ithermal-array.patch
+          - patches/calculix/fix-cd-lab-correction-edges.patch
+          - patches/calculix/fix-calinput-cs-guard.patch
+          - patches/calculix/fix-flux-rcavi-physcon.patch
+          - patches/calculix/fix-orifice-curve-integer.patch
+          - patches/calculix/fix-f2f-tabular-overclosure.patch
+          - patches/calculix/fix-preinitialnet-inlet-neighbor.patch
+          - patches/calculix/fix-malformed-input-nodes-elements.patch
+          - patches/calculix/fix-malformed-input-sets-sections.patch
+          - patches/calculix/fix-malformed-input-fluid.patch
+          - patches/calculix/fix-malformed-input-materials.patch
+          - patches/calculix/fix-malformed-input-parsing.patch
+          - patches/calculix/fix-fluid-network-labels.patch
+          - patches/calculix/fix-malformed-input-misc.patch
+          - patches/calculix/fix-malformed-input-followups.patch
 
   - name: gmsh
     buildsystem: cmake-ninja

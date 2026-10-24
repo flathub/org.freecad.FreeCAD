@@ -1,0 +1,96 @@
+diff --git a/ccx_2.23/src/complexfrequencys.f b/ccx_2.23/src/complexfrequencys.f
+index d9c63bf..0041168 100644
+--- a/ccx_2.23/src/complexfrequencys.f
++++ b/ccx_2.23/src/complexfrequencys.f
+@@ -52,8 +52,8 @@
+ !
+ !     check for cyclic symmetry
+ !
+-      if((mcs.ne.0).and.(cs(2,1).ge.0.d0)) then
+-         cyclicsymmetry=1
++      if(mcs.ne.0) then
++         if(cs(2,1).ge.0.d0) cyclicsymmetry=1
+       endif
+ !
+       nmethod=0
+@@ -129,8 +129,9 @@ c            mei(4)=1
+ !     mastructcs is called instead of mastruct a fictitious
+ !     minimum nodal diameter is stored
+ !
+-      if((cyclicsymmetry.eq.1).and.(mcs.ne.0).and.(cs(2,1)<0.d0)) 
+-     &       cs(2,1)=0.d0
++      if((cyclicsymmetry.eq.1).and.(mcs.ne.0)) then
++         if(cs(2,1)<0.d0) cs(2,1)=0.d0
++      endif
+ !
+       call getnewline(inpc,textpart,istat,n,key,iline,ipol,inl,
+      &     ipoinp,inp,ipoinpc)
+diff --git a/ccx_2.23/src/extrapolatefem.f b/ccx_2.23/src/extrapolatefem.f
+index 55098e9..e0256bb 100644
+--- a/ccx_2.23/src/extrapolatefem.f
++++ b/ccx_2.23/src/extrapolatefem.f
+@@ -99,7 +99,9 @@
+ !     calculation of the integration point coordinates for
+ !     output in the local system
+ !
+-         if((iorienloc.ne.0).and.(ielorien(1,i).ne.0)) then
++         iorien=0
++         if(iorienloc.ne.0) iorien=ielorien(1,i)
++         if(iorien.ne.0) then
+ !
+            iorien=ielorien(1,i)
+ !     
+diff --git a/ccx_2.23/src/modaldynamics.f b/ccx_2.23/src/modaldynamics.f
+index 352c356..9c0519f 100644
+--- a/ccx_2.23/src/modaldynamics.f
++++ b/ccx_2.23/src/modaldynamics.f
+@@ -48,8 +48,8 @@ c      iperturb(1)=0
+       tmin=0.d0
+       tmax=0.d0
+       steadystate=.false.
+-      if((mcs.ne.0).and.(cs(2,1).ge.0.d0)) then
+-         cyclicsymmetry=1
++      if(mcs.ne.0) then
++         if(cs(2,1).ge.0.d0) cyclicsymmetry=1
+       endif
+       nodalset=.false.
+ !
+@@ -265,8 +265,9 @@ c      endif
+ !     mastructcs is called instead of mastruct a fictitious
+ !     minimum nodal diameter is stored
+ !
+-      if((cyclicsymmetry.eq.1).and.(mcs.ne.0).and.(cs(2,1).lt.0.d0)) 
+-     &       cs(2,1)=0.d0
++      if((cyclicsymmetry.eq.1).and.(mcs.ne.0)) then
++         if(cs(2,1).lt.0.d0) cs(2,1)=0.d0
++      endif
+ !
+       call getnewline(inpc,textpart,istat,n,key,iline,ipol,inl,
+      &     ipoinp,inp,ipoinpc)
+diff --git a/ccx_2.23/src/steadystatedynamicss.f b/ccx_2.23/src/steadystatedynamicss.f
+index 91f1396..38fd1be 100644
+--- a/ccx_2.23/src/steadystatedynamicss.f
++++ b/ccx_2.23/src/steadystatedynamicss.f
+@@ -43,8 +43,8 @@
+       iexpl=0
+       iperturb(2)=0
+       harmonic='YES'
+-      if((mcs.ne.0).and.(cs(2,1).ge.0.d0)) then
+-         cyclicsymmetry=1
++      if(mcs.ne.0) then
++         if(cs(2,1).ge.0.d0) cyclicsymmetry=1
+       endif
+       nodalset=.false.
+ !
+@@ -234,8 +234,9 @@ c      nbody=0
+ !       mastructcs is called instead of mastruct a fictitious
+ !       minimum nodal diameter is stored
+ !
+-      if((cyclicsymmetry.eq.1).and.(mcs.ne.0).and.(cs(2,1)<0.d0)) 
+-     &         cs(2,1)=0.d0
++      if((cyclicsymmetry.eq.1).and.(mcs.ne.0)) then
++         if(cs(2,1)<0.d0) cs(2,1)=0.d0
++      endif
+ !
+       call getnewline(inpc,textpart,istat,n,key,iline,ipol,inl,
+      &     ipoinp,inp,ipoinpc)

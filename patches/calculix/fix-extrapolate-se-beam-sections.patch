@@ -1,0 +1,13 @@
+diff --git a/ccx_2.23/src/extrapolate_se.f b/ccx_2.23/src/extrapolate_se.f
+index eb409dd..3eaaf95 100644
+--- a/ccx_2.23/src/extrapolate_se.f
++++ b/ccx_2.23/src/extrapolate_se.f
+@@ -1071,7 +1071,7 @@ c     Bernhardi end
+ !
+       if((cflag.ne.' ').and.(cflag.ne.'E')) then
+          call map3dto1d2d(yn,ipkon,inum,kon,lakon,nfield,nk,ne,cflag,
+-     &         co,vold,iforce,mi)
++     &         co,vold,iforce,mi,ielprop,prop)
+       endif
+ !
+       return

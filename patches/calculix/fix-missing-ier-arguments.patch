@@ -1,0 +1,44 @@
+diff --git a/ccx_2.23/src/hcfs.f b/ccx_2.23/src/hcfs.f
+index 2f6b61c..894a659 100644
+--- a/ccx_2.23/src/hcfs.f
++++ b/ccx_2.23/src/hcfs.f
+@@ -94,7 +94,7 @@
+         write(*,*) '         ',
+      &       textpart(i)(1:index(textpart(i),' ')-1)
+         call inputerror(inpc,ipoinpc,iline,
+-     &       "*HCF%")
++     &       "*HCF%",ier)
+       endif
+ !     
+       if(mei(1).eq.0) then
+@@ -103,7 +103,7 @@
+         write(*,*) '         ',
+      &       textpart(i)(1:index(textpart(i),' ')-1)
+         call inputerror(inpc,ipoinpc,iline,
+-     &       "*HCF%")
++     &       "*HCF%",ier)
+       endif
+ !     
+       if(mei(2).eq.0) then
+@@ -112,7 +112,7 @@
+         write(*,*) '         ',
+      &       textpart(i)(1:index(textpart(i),' ')-1)
+         call inputerror(inpc,ipoinpc,iline,
+-     &       "*HCF%")
++     &       "*HCF%",ier)
+       endif
+ !     
+       if(tincf.eq.0.d0) then
+diff --git a/ccx_2.23/src/statics.f b/ccx_2.23/src/statics.f
+index e9eefab..5304fbc 100644
+--- a/ccx_2.23/src/statics.f
++++ b/ccx_2.23/src/statics.f
+@@ -149,7 +149,7 @@
+      &        istartset,
+      &        iendset,ialset,ipompc,nodempc,coefmpc,nmpc,nmpc_,ikmpc,
+      &        ilmpc,mpcfree,mcs,set,nset,labmpc,istep,istat,n,iline,
+-     &        ipol,inl,ipoinp,inp,nmethod,key,ipoinpc)
++     &        ipol,inl,ipoinp,inp,nmethod,key,ipoinpc,ier)
+          nmethod=1
+          do i=1,mcs
+             cs(2,i)=-0.5d0
