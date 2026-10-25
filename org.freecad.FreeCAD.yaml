@@ -676,6 +676,5 @@ modules:
             sed -i 's|@PACKAGE_VERSION@|@PACKAGE_VERSION@.'"$revcount"'|' src/XDGData/org.freecad.FreeCAD.metainfo.xml.in
             sed -i 's|${PACKAGE_WCURL}|https://github.com/FreeCAD/FreeCAD.git|' src/Build/Version.h.cmake
           - | # fix paths for flatpak environment
-            sed -i 's|/usr|/app|g' cMake/FindOCC.cmake src/Gui/GraphvizView.cpp
             sitepackagesDir=$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["platlib"].replace("/usr","/app"))')
             sed -i "s|\${python_libs}|$sitepackagesDir|" src/Ext/freecad/CMakeLists.txt
