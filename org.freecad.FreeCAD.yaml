@@ -354,22 +354,6 @@ modules:
       - type: patch
         path: patches/rapidjson-remove-assignment-operator.patch
 
-  # for opencascade. It was dropped from 24.08 runtime.
-  - name: tcl
-    subdir: unix
-    build-options:
-      no-debuginfo: true
-    cleanup:
-      - /bin
-      - /man
-    post-install:
-      - ln -s tclsh8.6 /app/bin/tclsh
-      - chmod 755 /app/lib/libtcl*.so
-    sources:
-      - type: archive
-        url: https://downloads.sourceforge.net/project/tcl/Tcl/8.6.17/tcl8.6.17-src.tar.gz
-        sha256: a3903371efcce8a405c5c245d029e9f6850258a60fa3761c4d58995610949b31
-
   - name: opencascade
     buildsystem: cmake-ninja
     builddir: true
@@ -380,9 +364,7 @@ modules:
       - -DUSE_RAPIDJSON=ON
       - -DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF
       - -DBUILD_DOC_Overview=OFF
-      # This is not enough to not require TCL, at least with this version of OCCT
-      - -DUSE_TK=OFF
-      - -DUSE_TCL=OFF
+      - -DBUILD_MODULE_Draw=OFF
     cleanup:
       - /bin
     sources:
