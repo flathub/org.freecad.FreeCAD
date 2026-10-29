@@ -1,0 +1,29 @@
+diff --git a/cMake/FreeCAD_Helpers/SetupCoin3D.cmake b/cMake/FreeCAD_Helpers/SetupCoin3D.cmake
+index 55b0b6c8dc..f2691f3fee 100644
+--- a/cMake/FreeCAD_Helpers/SetupCoin3D.cmake
++++ b/cMake/FreeCAD_Helpers/SetupCoin3D.cmake
+@@ -112,8 +112,9 @@ macro(SetupBundledCoinPivy)
+     endif ()
+ 
+     set(USE_EXTERNAL_EXPAT ON CACHE BOOL "Use system Expat for bundled Coin" FORCE)
+     set(FREETYPE_RUNTIME_LINKING OFF CACHE BOOL "Disable FreeType runtime linking for bundled Coin" FORCE)
++    set(FONTCONFIG_RUNTIME_LINKING OFF CACHE BOOL "Disable FontConfig runtime linking for bundled Coin" FORCE)
+     set(COIN_BUILD_TESTS OFF CACHE BOOL "Build bundled Coin tests" FORCE)
+     set(COIN_INSTALL OFF CACHE BOOL "Disable standalone install rules for bundled Coin" FORCE)
+     add_subdirectory("${CMAKE_SOURCE_DIR}/src/3rdParty/coin" "${CMAKE_BINARY_DIR}/src/3rdParty/coin")
+     if (NOT DEFINED COIN_VERSION OR COIN_VERSION STREQUAL "")
+
+diff --git a/src/3rdParty/coin/src/glue/freetype.cpp b/src/3rdParty/coin/src/glue/freetype.cpp
+index 03f1fcf6c..4a591005e 100644
+--- a/src/3rdParty/coin/src/glue/freetype.cpp
++++ b/src/3rdParty/coin/src/glue/freetype.cpp
+@@ -50,8 +50,9 @@
+ #endif /* HAVE_UNISTD_H */
+ #include <sys/types.h>
+ 
+ #ifdef HAVE_FONTCONFIG
++#define FONTCONFIGGLUE_ASSUME_FONTCONFIG 1
+ #include <fontconfig/fontconfig.h>
+ #endif
+ 
+ #ifdef HAVE_FREETYPE /* In case we're _not_ doing runtime linking. */
