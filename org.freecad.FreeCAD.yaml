@@ -70,6 +70,7 @@ modules:
       - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
       - -DDYNAMIC_ARCH=ON
+      - -DTARGET=GENERIC
       - -DBUILD_SHARED_LIBS=ON
       - -DBUILD_STATIC_LIBS=OFF
     sources:
